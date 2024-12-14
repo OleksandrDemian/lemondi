@@ -1,4 +1,5 @@
-import { componentUniqueSymbol, getComponent, register, getDependencies } from "./container/container";
+import "reflect-metadata";
+import { componentUniqueSymbol, getDependencies } from "./container/container";
 
 export interface IApp {
   start: () => void;
