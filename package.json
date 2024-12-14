@@ -1,0 +1,14 @@
+{
+  "name": "bframe",
+  "version": "0.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "run": "tsc && node ./dist/test-app/app.js"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2",
+    "tsc": "^2.0.4",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "module": "CommonJS"
+  },
+  "lib": ["ESNext"]
+}
