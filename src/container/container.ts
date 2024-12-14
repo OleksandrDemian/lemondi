@@ -72,7 +72,6 @@ export const register = (props: TFactoryComponentInfo | TClassComponentInfo) => 
 
 export const getDependencies = <T>(ctor: any, prop?: any): any[] => {
   const paramTypes = Reflect.getMetadata("design:paramtypes", ctor, prop) || [];
-  console.log("Param types", paramTypes, ctor, prop);
   return paramTypes.map((type: any) => {
     // You can extend this logic to resolve the dependency
     return getComponent(type);

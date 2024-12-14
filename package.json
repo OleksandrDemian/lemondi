@@ -7,8 +7,11 @@
     "run": "tsc && node ./dist/test-app/app.js"
   },
   "dependencies": {
-    "reflect-metadata": "^0.2.2",
-    "tsc": "^2.0.4",
+    "fast-glob": "^3.3.2",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }
 }

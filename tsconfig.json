@@ -5,7 +5,8 @@
     "emitDecoratorMetadata": true,
     "outDir": "dist",
     "moduleResolution": "node",
-    "module": "CommonJS"
+    "module": "CommonJS",
+    "types": ["node"]
   },
   "lib": ["ESNext"]
 }

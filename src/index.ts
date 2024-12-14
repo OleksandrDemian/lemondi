@@ -1,12 +1,21 @@
 import "reflect-metadata";
 import { componentUniqueSymbol, getDependencies } from "./container/container";
+import { importFactories } from "./scan/project";
+import { FACTORIES_PATH } from "./config/const";
 
 export interface IApp {
-  start: () => void;
+  onStart (): Promise<void>;
 }
 
-export const start = (app: new (...args: any[]) => IApp) => {
+export const start = async (app: new (...args: any[]) => IApp) => {
   const id = Symbol();
   Reflect.set(app, componentUniqueSymbol, id);
-  Reflect.construct(app, getDependencies(app)).start();
+
+  await importFactories({
+    factoriesDir: app[FACTORIES_PATH],
+  });
+
+  console.log("Instantiate app");
+  const instance = Reflect.construct(app, getDependencies(app));
+  instance.onStart();
 };
