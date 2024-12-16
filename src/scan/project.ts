@@ -11,8 +11,20 @@ const getOsPattern = (path: string) => {
   return path;
 }
 
-export const importRoutes = () => {
-
+export const importRoutes = async ({ routesDir }: { routesDir: string }) => {
+  const tsConfig = readTsConfig();
+  const cwd = process.cwd();
+  const pattern = getOsPattern(join(tsConfig.compilerOptions.outDir, routesDir, "**", "*.js"));
+  console.log("Import routers using the following pattern: " + pattern);
+  const files = await glob(pattern, {
+    ignore: ["**/*.util.*"],
+    cwd,
+  });
+  for (const filePath of files) {
+    console.log("Import router: " + filePath);
+    await import(join(cwd, filePath));
+  }
+  console.log("Factories imported");
 };
 
 export const importFactories = async ({ factoriesDir }: { factoriesDir: string }) => {

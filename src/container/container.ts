@@ -29,7 +29,7 @@ const registerClassComponent = ({ Component, unique, type }: TClassComponentInfo
   const obj = new Proxy({ current: undefined }, {
     get: (target, prop, receiver, ...args) => {
       if (!target.current) {
-        target.current = new Component(...getDependencies(Component)); // todo: inject components
+        target.current = new Component(...getDependencies(Component));
       }
 
       return Reflect.get(target.current, prop, receiver, ...args);

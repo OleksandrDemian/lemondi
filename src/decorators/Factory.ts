@@ -1,4 +1,4 @@
-import { getComponent, register } from "../container/container";
+import { register } from "../container/container";
 
 export const Instantiate = () => {
   return (a, b, c) => {
