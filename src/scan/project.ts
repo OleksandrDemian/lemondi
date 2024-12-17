@@ -24,7 +24,7 @@ export const importRoutes = async ({ routesDir }: { routesDir: string }) => {
     console.log("Import router: " + filePath);
     await import(join(cwd, filePath));
   }
-  console.log("Factories imported");
+  console.log("Routers imported");
 };
 
 export const importFactories = async ({ factoriesDir }: { factoriesDir: string }) => {
