@@ -45,7 +45,7 @@ export function Put (props?: TRouteProps) {
     createRouterMethod(target, {
       method: "PUT",
       path: props?.path ?? "/",
-      isAbsolute: props?.isAbsolute,
+      isAbsolute: !!props?.isAbsolute,
       name: key,
     });
   };

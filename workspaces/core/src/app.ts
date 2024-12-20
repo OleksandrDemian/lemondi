@@ -1,6 +1,6 @@
 import { componentUniqueSymbol, getDependencies } from "./container/container";
-import { importFactories } from "./scan/project";
-import { FACTORIES_PATH } from "./config/const";
+import { Scanner } from "./scan/scanner";
+import { IMPORT_FILES } from "./config/const";
 
 export interface IApp {
   onStart (): Promise<void>;
@@ -10,9 +10,10 @@ export const start = async (app: new (...args: any[]) => IApp) => {
   const id = Symbol();
   Reflect.set(app, componentUniqueSymbol, id);
 
-  await importFactories({
-    factoriesDir: app[FACTORIES_PATH],
-  });
+  const importPaths = app[IMPORT_FILES] as string[];
+  for(const path of importPaths) {
+    await Scanner.importFiles(path);
+  }
 
   console.log("Instantiate app");
   const instance = Reflect.construct(app, getDependencies(app));

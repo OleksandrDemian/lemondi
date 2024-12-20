@@ -1,2 +1,1 @@
-export const FACTORIES_PATH = Symbol("__factoriesPath__");
-export const DEFAULT_FACTORY_PATH = "factories";
+export const IMPORT_FILES = Symbol("__importFiles__");

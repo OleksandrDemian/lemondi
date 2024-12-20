@@ -1,11 +1,10 @@
-import { DEFAULT_FACTORY_PATH, FACTORIES_PATH } from "../config/const";
+import { IMPORT_FILES } from "../config/const";
 
 export type TAppInitilizerProps = {
-  factoriesPath?: string;
+  importFiles: string[];
 };
 export function AppInitializer (props?: TAppInitilizerProps) {
   return (target: any) => {
-    const factoriesPath = props?.factoriesPath || DEFAULT_FACTORY_PATH;
-    Reflect.set(target, FACTORIES_PATH, factoriesPath);
+    Reflect.set(target, IMPORT_FILES, props.importFiles || []);
   };
 }
