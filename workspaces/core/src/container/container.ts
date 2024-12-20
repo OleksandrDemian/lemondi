@@ -49,7 +49,7 @@ const registerFactoryComponent = ({ factoryClass, instantiateFn, returnClass, ty
   const obj = new Proxy({ current: undefined }, {
     get: (target, prop, receiver, ...args) => {
       if (!target.current) {
-        target.current = instantiateFn(...getDependencies(factoryClass.prototype, instantiateFn.name)); // todo: inject components
+        target.current = instantiateFn(...getDependencies(factoryClass.prototype, instantiateFn.name));
       }
 
       return Reflect.get(target.current, prop, receiver, ...args);
@@ -71,6 +71,7 @@ export const register = (props: TFactoryComponentInfo | TClassComponentInfo) => 
 };
 
 export const getDependencies = <T>(ctor: any, prop?: any): any[] => {
+  // @ts-ignore
   const paramTypes = Reflect.getMetadata("design:paramtypes", ctor, prop) || [];
   return paramTypes.map((type: any) => {
     // You can extend this logic to resolve the dependency

@@ -1,18 +1,13 @@
 {
   "name": "bframe",
   "version": "0.0.0",
+  "private": "true",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "run": "tsc && node ./dist/test-app/app.js"
+    "build": "yarn workspaces run build"
   },
-  "dependencies": {
-    "fast-glob": "^3.3.2",
-    "fastify": "^5.2.0",
-    "reflect-metadata": "^0.2.2"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
-  }
+  "workspaces": [
+    "workspaces/*"
+  ]
 }

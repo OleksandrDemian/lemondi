@@ -1,5 +1,7 @@
+import { HTTPMethods } from "fastify";
+
 export type TRouterMethod = {
-  method: "GET" | "POST";
+  method: HTTPMethods;
   path?: string;
   isAbsolute?: boolean;
   name: string | Symbol;

@@ -1,4 +1,4 @@
-import { ROUTER_METHODS_PROP } from "../config/const";
+import { ROUTER_METHODS_PROP } from "../const/const";
 import { TRouterMethod } from "./types";
 
 const routers: any[] = []
