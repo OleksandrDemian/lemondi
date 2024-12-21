@@ -1,73 +1,15 @@
+import { getClassId } from "@bframe/scanner";
+
 export type TInfo = {
   unique: Symbol;
   type: 'class' | 'function';
 };
 
-export type TFactoryComponentInfo = TInfo & {
-  factoryClass: any;
-  returnClass: any;
-  instantiateFn: any;
-  type: 'function';
-}
+const proxies: Record<symbol, any> = {};
 
-export type TClassComponentInfo = TInfo & {
-  Component: any;
-  type: 'class';
-};
-
-export const componentUniqueSymbol = Symbol("__component_id__");
-
-const registry: {
-  identifier: TInfo;
-  proxy: any;
-}[] = [];
-
-const registerClassComponent = ({ Component, unique, type }: TClassComponentInfo) => {
-  const identifier: TInfo = { unique, type };
-
-  Reflect.set(Component, componentUniqueSymbol, identifier);
-  const obj = new Proxy({ current: undefined }, {
-    get: (target, prop, receiver, ...args) => {
-      if (!target.current) {
-        target.current = new Component(...getDependencies(Component));
-      }
-
-      return Reflect.get(target.current, prop, receiver, ...args);
-    }
-  });
-
-  registry.push({
-    identifier,
-    proxy: obj,
-  });
-};
-
-const registerFactoryComponent = ({ factoryClass, instantiateFn, returnClass, type, unique }: TFactoryComponentInfo) => {
-  const identifier: TInfo = { unique, type };
-  Reflect.set(returnClass, componentUniqueSymbol, identifier);
-
-  const obj = new Proxy({ current: undefined }, {
-    get: (target, prop, receiver, ...args) => {
-      if (!target.current) {
-        target.current = instantiateFn(...getDependencies(factoryClass.prototype, instantiateFn.name));
-      }
-
-      return Reflect.get(target.current, prop, receiver, ...args);
-    }
-  });
-
-  registry.push({
-    identifier,
-    proxy: obj,
-  });
-}
-
-export const register = (props: TFactoryComponentInfo | TClassComponentInfo) => {
-  if (props.type === "function") {
-    registerFactoryComponent(props as TFactoryComponentInfo);
-  } else if (props.type === "class") {
-    registerClassComponent(props as TClassComponentInfo);
-  }
+export const addProxy = (id: symbol, proxy: any) => {
+  console.log("Register proxy: ", id);
+  proxies[id] = proxy;
 };
 
 export const getDependencies = <T>(ctor: any, prop?: any): any[] => {
@@ -79,17 +21,22 @@ export const getDependencies = <T>(ctor: any, prop?: any): any[] => {
 };
 
 export const getComponent = <T> (base: new (...args: any) => T): T => {
-  const component = registry.find((component) => {
-    if (component.identifier.unique === base[componentUniqueSymbol].unique) {
-      return true;
-    }
+  const classId = getClassId(base);
+  const proxy = proxies[classId];
 
-    return false;
-  });
-
-  if (!component) {
-    throw new Error("Impossible to find component");
+  if (proxy) {
+    return proxy;
   }
 
-  return component.proxy;
+  const newProxy = new Proxy({ current: undefined }, {
+    get: (target, prop, receiver, ...args) => {
+      if (!target.current) {
+        target.current = new base(...getDependencies(base));
+      }
+
+      return Reflect.get(target.current, prop, receiver, ...args);
+    }
+  });
+  addProxy(classId, newProxy);
+  return newProxy as T;
 };

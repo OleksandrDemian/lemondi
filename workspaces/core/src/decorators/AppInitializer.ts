@@ -1,10 +1,5 @@
-import { IMPORT_FILES } from "../config/const";
+import { createClassDecorator } from "@bframe/scanner";
 
-export type TAppInitilizerProps = {
+export const AppInitializer = createClassDecorator<{
   importFiles: string[];
-};
-export function AppInitializer (props?: TAppInitilizerProps) {
-  return (target: any) => {
-    Reflect.set(target, IMPORT_FILES, props.importFiles || []);
-  };
-}
+}>("AppInitializer");

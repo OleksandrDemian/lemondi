@@ -1,13 +1,22 @@
-import { register } from "../container/container";
+import { createClassDecorator, getClassId, scan } from "@bframe/scanner";
+import { addProxy, getDependencies } from "../container/container";
 
-export const Component = () => {
-  return (target: any) => {
-    const identifier = Symbol(target.name);
+export const Component = createClassDecorator("Component");
 
-    register({
-      unique: identifier,
-      type: 'class',
-      Component: target,
+export const initComponents = () => {
+  const components = scan(Component);
+  for (const component of components) {
+    const classId = getClassId(component.ctor);
+    const proxy = new Proxy({ current: undefined }, {
+      get: (target, prop, receiver, ...args) => {
+        if (!target.current) {
+          target.current = new component.ctor(...getDependencies(component.ctor));
+        }
+  
+        return Reflect.get(target.current, prop, receiver, ...args);
+      }
     });
-  };
+
+    addProxy(classId, proxy);
+  }
 };

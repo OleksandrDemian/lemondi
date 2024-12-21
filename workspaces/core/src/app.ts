@@ -1,21 +1,31 @@
-import { componentUniqueSymbol, getDependencies } from "./container/container";
+import { getDependencies } from "./container/container";
 import { Scanner } from "./scan/scanner";
-import { IMPORT_FILES } from "./config/const";
+import { scan } from "@bframe/scanner";
+import { AppInitializer } from "./decorators/AppInitializer";
+import { initComponents } from "./decorators/Component";
+import { initFactories } from "./decorators/Factory";
 
 export interface IApp {
   onStart (): Promise<void>;
 }
 
-export const start = async (app: new (...args: any[]) => IApp) => {
-  const id = Symbol();
-  Reflect.set(app, componentUniqueSymbol, id);
+export const start = async () => {
+  const [appComponent] = scan(AppInitializer);
 
-  const importPaths = app[IMPORT_FILES] as string[];
-  for(const path of importPaths) {
-    await Scanner.importFiles(path);
+  if (appComponent) {
+    const importPaths = appComponent.decoratorProps.importFiles;
+    for(const path of importPaths) {
+      await Scanner.importFiles(path);
+    }
+
+    initComponents();
+    initFactories();
+
+    console.log("Instantiate app");
+
+    const instance = Reflect.construct(appComponent.ctor, getDependencies(appComponent.ctor));
+    instance.onStart();
+  } else {
+    throw new Error("No app initializer");
   }
-
-  console.log("Instantiate app");
-  const instance = Reflect.construct(app, getDependencies(app));
-  instance.onStart();
 };

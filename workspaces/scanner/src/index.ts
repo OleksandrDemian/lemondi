@@ -1,18 +1,21 @@
 // WIP
 const DecoratorTypeSymbol = Symbol("__type__");
 const MethodsTypeSymbol = Symbol("__methods__");
+const ClassIdSymbol = Symbol("__class_id__");
 
 type TCtor = new (...args: any) => any;
 
 type TRegistryEntry = {
   ctor: TCtor; // ctor = constructor
-  decoratorId: Symbol;
+  decoratorId: symbol;
   decoratorProps?: any;
 };
 
 const registry: TRegistryEntry[] = [];
 
-function registerClass (decoratorId: Symbol, ctor: TCtor, decoratorProps?: any) {
+function registerClass (decoratorId: symbol, ctor: TCtor, decoratorProps?: any) {
+  console.log("Register class: " + ctor.name);
+  assignClassId(ctor);
   registry.push({
     ctor,
     decoratorId,
@@ -21,6 +24,7 @@ function registerClass (decoratorId: Symbol, ctor: TCtor, decoratorProps?: any) 
 };
 
 function registerMethod (target: any, key: string, decoratorId: Symbol, props?: any) {
+  console.log("Register method: " + target.name + "->" + key);
   if (!target[MethodsTypeSymbol]) {
     target[MethodsTypeSymbol] = {};
   }
@@ -37,12 +41,18 @@ function registerMethod (target: any, key: string, decoratorId: Symbol, props?: 
   });
 }
 
-function getDecoratorType (decorator: any) {
+export function assignClassId (ctor: any) {
+  const classId = Symbol(ctor.name);
+  ctor.prototype[ClassIdSymbol] = classId;
+  return classId;
+}
+
+export function getDecoratorId (decorator: any) {
   return decorator.prototype[DecoratorTypeSymbol];
 }
 
-export function scan (component: any) {
-  const searchFor = getDecoratorType(component);
+export function scan (decorator: any) {
+  const searchFor = getDecoratorId(decorator);
   const result: TRegistryEntry[] = [];
   for (const entry of registry) {
     if (entry.decoratorId === searchFor) {
@@ -53,20 +63,32 @@ export function scan (component: any) {
   return result;
 }
 
-export function scanComponent (component: any) {
-  const result = [];
+export type TScanClassResult = {
+  type: 'fn' | 'prop' | 'constructor';
+  decorators: { decoratorId: symbol; decoratorProps: any }[];
+  name: string;
+};
+export function scanClass (component: any): TScanClassResult[] {
+  const result: TScanClassResult[] = [];
   for (const prop of Reflect.ownKeys(component.prototype)) {
-    if (typeof component.prototype[prop] === "function") {
-      const decorators = component.prototype[MethodsTypeSymbol][prop];
+    if (prop === "constructor") {
       result.push({
-        type: "function",
+        type: "constructor",
+        decorators: [],
+        name: prop as string,
+      });
+    } else if (typeof component.prototype[prop] === "function") {
+      const decorators = component.prototype[MethodsTypeSymbol][prop].decorators || [];
+      result.push({
+        type: "fn",
         decorators,
-        name: prop,
+        name: prop as string,
       });
     } else {
       result.push({
-        type: "property",
-        name: prop,
+        type: "prop",
+        name: prop as string,
+        decorators: [],
       });
     }
   }
@@ -74,7 +96,7 @@ export function scanComponent (component: any) {
   return result;
 }
 
-export function createComponentDecorator <T = never> (name: string) {
+export function createClassDecorator <T = never> (name: string) {
   const decoratorId = Symbol(name);
   function component (props?: T): ClassDecorator {
     return (target: any) => {
@@ -97,4 +119,8 @@ export function createMethodDecorator <T = never>(name: string) {
   method.prototype[DecoratorTypeSymbol] = decoratorId;
 
   return method;
+}
+
+export function getClassId (ctor: TCtor): symbol {
+  return ctor.prototype[ClassIdSymbol];
 }
