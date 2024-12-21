@@ -8,7 +8,6 @@ export type TInfo = {
 const proxies: Record<symbol, any> = {};
 
 export const addProxy = (id: symbol, proxy: any) => {
-  console.log("Register proxy: ", id);
   proxies[id] = proxy;
 };
 
@@ -39,4 +38,8 @@ export const getComponent = <T> (base: new (...args: any) => T): T => {
   });
   addProxy(classId, newProxy);
   return newProxy as T;
+};
+
+export const instantiate = <T>(ctor: new (...args: any) => T) => {
+  return new ctor(...getDependencies(ctor));
 };

@@ -21,8 +21,6 @@ export const start = async () => {
     initComponents();
     initFactories();
 
-    console.log("Instantiate app");
-
     const instance = Reflect.construct(appComponent.ctor, getDependencies(appComponent.ctor));
     instance.onStart();
   } else {

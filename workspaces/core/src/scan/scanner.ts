@@ -12,15 +12,12 @@ const getOsPattern = (path: string) => {
 
 export const Scanner = (() => {
   async function importFiles (pattern: string) {
-    console.log("Import files using the following pattern: " + getOsPattern(pattern));
     const files = await glob(getOsPattern(pattern), {
       ignore: ["**/*.util.*"],
     });
     for (const filePath of files) {
-      console.log("Import file: " + filePath);
       await require(filePath);
     }
-    console.log("Files imported");
   }
 
   function buildPath (...args: string[]) {

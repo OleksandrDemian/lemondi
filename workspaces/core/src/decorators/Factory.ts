@@ -19,7 +19,6 @@ export function initFactories () {
 
       const isInstantiator = c.decorators?.find((d) => d.decoratorId === InsatntiateDecoratorId);
       if (isInstantiator) {
-        console.log("Instantiate from " + f.ctor.name, c.name);
         const returnType = Reflect.getMetadata('design:returntype', f.ctor.prototype, c.name);
         const returnClassId = assignClassId(returnType);
         const proxy = new Proxy({ current: undefined }, {

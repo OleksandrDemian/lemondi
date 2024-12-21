@@ -14,7 +14,6 @@ type TRegistryEntry = {
 const registry: TRegistryEntry[] = [];
 
 function registerClass (decoratorId: symbol, ctor: TCtor, decoratorProps?: any) {
-  console.log("Register class: " + ctor.name);
   assignClassId(ctor);
   registry.push({
     ctor,
@@ -24,7 +23,6 @@ function registerClass (decoratorId: symbol, ctor: TCtor, decoratorProps?: any) 
 };
 
 function registerMethod (target: any, key: string, decoratorId: Symbol, props?: any) {
-  console.log("Register method: " + target.name + "->" + key);
   if (!target[MethodsTypeSymbol]) {
     target[MethodsTypeSymbol] = {};
   }
@@ -42,6 +40,10 @@ function registerMethod (target: any, key: string, decoratorId: Symbol, props?: 
 }
 
 export function assignClassId (ctor: any) {
+  if (ctor.prototype[ClassIdSymbol] != undefined) {
+    return ctor.prototype[ClassIdSymbol];
+  }
+
   const classId = Symbol(ctor.name);
   ctor.prototype[ClassIdSymbol] = classId;
   return classId;
