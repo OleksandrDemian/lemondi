@@ -98,6 +98,11 @@ export function scanClass (component: any): TScanClassResult[] {
   return result;
 }
 
+export function getMethodDecorator (method: TScanClassResult, decorator: any) {
+  const decoratorId = getDecoratorId(decorator);
+  return method.decorators.find((d) => d.decoratorId === decoratorId);
+}
+
 export function createClassDecorator <T = never> (name: string) {
   const decoratorId = Symbol(name);
   function component (props?: T): ClassDecorator {
