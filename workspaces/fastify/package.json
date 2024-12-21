@@ -1,0 +1,15 @@
+{
+  "name": "@bframe/fastify",
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf ./dist && tsc"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0",
+    "rimraf": "^6.0.1",
+    "@bframe/scanner": "0.0.0"
+  }
+}
