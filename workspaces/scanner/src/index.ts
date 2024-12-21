@@ -5,7 +5,7 @@ const MethodsTypeSymbol = Symbol("__methods__");
 type TCtor = new (...args: any) => any;
 
 type TRegistryEntry = {
-  ctor: TCtor; // ctor -> constructor
+  ctor: TCtor; // ctor = constructor
   decoratorId: Symbol;
   decoratorProps?: any;
 };
@@ -54,11 +54,27 @@ export function scan (component: any) {
 }
 
 export function scanComponent (component: any) {
-  const methods = component.prototype[MethodsTypeSymbol];
-  return methods;
+  const result = [];
+  for (const prop of Reflect.ownKeys(component.prototype)) {
+    if (typeof component.prototype[prop] === "function") {
+      const decorators = component.prototype[MethodsTypeSymbol][prop];
+      result.push({
+        type: "function",
+        decorators,
+        name: prop,
+      });
+    } else {
+      result.push({
+        type: "property",
+        name: prop,
+      });
+    }
+  }
+  
+  return result;
 }
 
-function createComponentDecorator <T = never> (name: string) {
+export function createComponentDecorator <T = never> (name: string) {
   const decoratorId = Symbol(name);
   function component (props?: T): ClassDecorator {
     return (target: any) => {
@@ -70,10 +86,7 @@ function createComponentDecorator <T = never> (name: string) {
   return component;
 }
 
-export const CustomDecorator = createComponentDecorator<{ name: string }>("CustomDecorator");
-export const TestDecorator = createComponentDecorator("TestDecorator");
-
-function createMethodDecorator <T = never>(name: string) {
+export function createMethodDecorator <T = never>(name: string) {
   const decoratorId = Symbol(name);
 
   function method (props?: T): MethodDecorator {
@@ -85,6 +98,3 @@ function createMethodDecorator <T = never>(name: string) {
 
   return method;
 }
-
-export const MethodTest = createMethodDecorator<{ isTest: boolean }>("MethodTest");
-export const MethodPath = createMethodDecorator<{ path: string }>("MethodTest");

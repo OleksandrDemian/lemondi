@@ -13,7 +13,8 @@
   "dependencies": {
     "fast-glob": "^3.3.2",
     "reflect-metadata": "^0.2.2",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "@bframe/scanner": "0.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

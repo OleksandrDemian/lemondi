@@ -17,6 +17,5 @@ export const start = async (app: new (...args: any[]) => IApp) => {
 
   console.log("Instantiate app");
   const instance = Reflect.construct(app, getDependencies(app));
-
   instance.onStart();
 };
