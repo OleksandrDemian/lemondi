@@ -27,7 +27,10 @@ export class FastifyModule {
         if (url) {
           fastify.route({
             method: route.method,
-            handler: router[fnName].bind(router),
+            handler: async (...args) => {
+              const result = await Promise.resolve(router[fnName].call(router, ...args));
+              return result;
+            },
             url,
           });
         }
