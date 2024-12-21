@@ -1,4 +1,4 @@
-import { componentUniqueSymbol, register } from "../container/container";
+import { register } from "../container/container";
 
 export const Component = () => {
   return (target: any) => {
