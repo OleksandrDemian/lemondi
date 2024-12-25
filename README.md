@@ -38,7 +38,7 @@ npm install @bframe/fastify
 
 ## Modules
 
-### Core Module (`@bframe/core`)
+### Core Module
 
 The **`@bframe/core`** module provides the essential infrastructure for dependency injection in BFrame. It enables the definition of components, event listeners, and the automatic instantiation of services. You can easily integrate with external libraries, build and manage components, and configure app lifecycle events.
 
@@ -48,9 +48,9 @@ The **`@bframe/core`** module provides the essential infrastructure for dependen
   - Seamless integration with external libraries through factory functions.
   - Utility functions for app startup and managing components.
 
-- [Core Module Documentation](https://github.com/your-repo/bframe-core)
+- [Core Module Documentation](https://github.com/OleksandrDemian/bframe/tree/main/workspaces/core)
 
-### Scanner Module (`@bframe/scanner`)
+### Scanner Module
 
 The **`@bframe/scanner`** module is responsible for scanning and managing decorators in your application. It provides utilities to find and manage class and method decorators, which are essential for DI frameworks. This module helps in discovering components and applying decorators to classes and methods in a dynamic way.
 
@@ -59,9 +59,9 @@ The **`@bframe/scanner`** module is responsible for scanning and managing decora
   - Provides utilities to assign and get decorator IDs.
   - Enables scanning for decorated classes and methods automatically.
 
-- [Scanner Module Documentation](https://github.com/your-repo/bframe-scanner)
+- [Scanner Module Documentation](https://github.com/OleksandrDemian/bframe/tree/main/workspaces/scanner)
 
-### Fastify Module (`@bframe/fastify`)
+### Fastify Module
 
 The **`@bframe/fastify`** module integrates Fastify with the BFrame DI framework. It enables easy definition of HTTP routes, server configuration, and event handling in your Fastify application. The module automatically wires up routes from decorators and provides an easy-to-use API for managing Fastify servers with DI support.
 
@@ -71,21 +71,18 @@ The **`@bframe/fastify`** module integrates Fastify with the BFrame DI framework
   - Start a Fastify server with DI integration.
   - Access the active Fastify instance for custom configuration.
 
-- [Fastify Module Documentation](https://github.com/your-repo/bframe-fastify)
+- [Fastify Module Documentation](https://github.com/OleksandrDemian/bframe/tree/main/workspaces/fastify)
 
 ## Usage
 
-Below is a brief overview of how to use each module to build a simple app:
-
-### 1. Create Components with `@bframe/core`
-
-Define your components using the `@Component()` decorator.
+Below is a brief overview of how to use each module to create 3 components, inject LanguageService and start the app:
 
 ```typescript
-import {Component} from '@bframe/core';
+import {Component, start} from '@bframe/core';
 
+// define langauge service component
 @Component()
-class LangaugesService {
+class LanguagesService {
   sayHi(lang: string) {
     if (lang === "en") {
       console.log("Hi!");
@@ -96,33 +93,29 @@ class LangaugesService {
 }
 
 @Component()
-class ItalianLangauge {
-  constructor(private languageService: LangaugesService) { }
+class ItalianLanguage {
+  // languageService is automatically injected. private modifier makes it available via `this.languageService` through the component
+  constructor(private languageService: LanguagesService) { }
   sayHi() {
     return this.languageService.sayHi("it");
   }
 }
 
 @Component()
-class EnglishLangauge {
-  constructor(private languageService: LangaugesService) { }
+class EnglishLanguage {
+  // languageService is automatically injected. private modifier makes it available via `this.languageService` through the component
+  constructor(private languageService: LanguagesService) { }
   sayHi() {
     return this.languageService.sayHi("en");
   }
 }
-```
 
-### 2. Start the Application
-
-Use the `start()` function from `@bframe/core` to bootstrap your application and load required components.
-
-```typescript
-import { start } from '@bframe/core';
-
+// start application
 start({
-  require: [ItalianLangauge, EnglishLangauge],  // Specify the components to load
-  importFiles: ['./src/**/*.ts'],               // Optionally load files
-  onStart: async ([it, en]) => {
+  require: [ItalianLanguage, EnglishLanguage],  // Load ItalianLanguage and EnglishLanguage components at start time
+  importFiles: [], // no need to import files in this test
+  onStart: async (it, en) => {
+    // app loaded, do stuff
     it.sayHi(); // Ciao!
     en.sayHi(); // Hi!
   }
