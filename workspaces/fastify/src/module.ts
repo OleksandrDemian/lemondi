@@ -1,5 +1,5 @@
-import { Component, instantiate } from "@bframe/core";
-import Fastify, { FastifyListenOptions, HTTPMethods } from 'fastify';
+import {Component, instantiate} from "@bframe/core";
+import Fastify, {FastifyInstance, FastifyListenOptions, HTTPMethods} from 'fastify';
 import { Router } from "./decorators/router";
 import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@bframe/scanner";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
@@ -27,18 +27,20 @@ export class ModuleConfiguration {
 
 @Component()
 export class FastifyModule {
+  fastify: FastifyInstance;
+
   constructor (
     private config: ModuleConfiguration,
-  ) { }
+  ) {
+    this.fastify = Fastify(this.config);
+  }
 
-  start(opts?: FastifyListenOptions) {
-    const fastify = Fastify(this.config);
+  buildRoutes (): FastifyModule {
     const routers = scan(Router);
 
     for (const router of routers) {
       const routerInstance = instantiate(router);
       const [routerDecorator] = findClassDecorators(router, Router);
-
       console.log(`[${router.name}]`);
 
       for (const prop of Reflect.ownKeys(router.prototype)) {
@@ -46,7 +48,7 @@ export class FastifyModule {
         if (routerProps) {
           const url = routerProps.isAbsolute ? routerProps.path : routerDecorator.decoratorProps?.path || '' + routerProps?.path;
           if (url) {
-            fastify.route({
+            this.fastify.route({
               method: routerProps.method,
               handler: async (...args) => {
                 return await Promise.resolve(routerInstance[prop].call(routerInstance, ...args));
@@ -54,13 +56,21 @@ export class FastifyModule {
               url,
             });
           }
-    
+
           console.log("  - " + routerProps.method + " " + url);
         }
       }
     }
 
-    fastify.listen(opts);
+    return this;
+  }
+
+  async listen (opts?: FastifyListenOptions) {
+    return this.fastify.listen(opts);
+  }
+
+  getFastifyInstance(): FastifyInstance {
+    return this.fastify;
   }
 }
 
