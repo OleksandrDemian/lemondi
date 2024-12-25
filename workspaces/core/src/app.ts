@@ -1,24 +1,36 @@
-import { FilesLoader } from "./loadFiles/filesLoader";
-import { initComponents } from "./decorators/Component";
-import { initFactories } from "./decorators/Factory";
+import { FilesLoader } from "./filesLoader";
+import { getComponent } from "./container/container";
+import {initComponents, initFactories} from "./context";
+import {triggerAppEvent} from "./appEvents";
 
-export type TStartProps = {
-  onStart?: () => Promise<void>;
+export type TStartProps<T extends any[]> = {
+  onStart?: (...instances: { [K in keyof T]: InstanceType<T[K]> }) => Promise<void>;
+  require: [...T],
   importFiles?: string[];
-}
+};
 
-export const start = (props: TStartProps) => {
-  const promises: Promise<any>[] = [];
-  for(const path of props.importFiles) {
-    promises.push(FilesLoader.importFiles(path));
-  }
+export const start = <TModules extends any[]>(props: TStartProps<TModules>) => {
+  (async () => {
+    const promises: Promise<any>[] = [];
+    for(const path of props.importFiles) {
+      promises.push(FilesLoader.importFiles(path));
+    }
 
-  Promise.all(promises).then(() => {
+    await Promise.all(promises);
+
     initComponents();
     initFactories();
 
-    if (props.onStart) {
-      props.onStart();
+    const instances: any = [];
+
+    for (const module of props.require) {
+      instances.push(getComponent(module));
     }
-  });
+
+    triggerAppEvent("beforeStart");
+    if (props.onStart) {
+      await props.onStart(...instances);
+    }
+    triggerAppEvent("afterStart");
+  })();
 };

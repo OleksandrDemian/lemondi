@@ -1,4 +1,4 @@
-import { getClassId } from "@bframe/scanner";
+import {getClassId} from "@bframe/scanner";
 
 const proxies: Record<symbol, any> = {};
 
@@ -25,7 +25,7 @@ export const getComponent = <T> (base: new (...args: any) => T): T => {
   const newProxy = new Proxy({ current: undefined }, {
     get: (target, prop, receiver, ...args) => {
       if (!target.current) {
-        target.current = new base(...getDependencies(base));
+        target.current = instantiate(base);
       }
 
       return Reflect.get(target.current, prop, receiver, ...args);
