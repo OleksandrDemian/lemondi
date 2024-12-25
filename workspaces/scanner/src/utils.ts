@@ -29,7 +29,7 @@ export function createMethodDecorator <T = never>(name: string): TCreateMethodDe
   return method;
 }
 
-export function getDecoratorId (decorator: TCreateClassDecorator<any> | TCreateMethodDecorator<any>) {
+export function getDecoratorId (decorator: TCreateClassDecorator<any> | TCreateMethodDecorator<any>): symbol {
   return decorator.prototype[DecoratorTypeSymbol];
 }
 
@@ -37,7 +37,7 @@ export function getClassId (ctor: TCtor): symbol {
   return ctor.prototype[ClassIdSymbol];
 }
 
-export function assignClassId (ctor: TCtor) {
+export function assignClassId (ctor: TCtor): symbol {
   if (ctor.prototype[ClassIdSymbol] != undefined) {
     return ctor.prototype[ClassIdSymbol];
   }
