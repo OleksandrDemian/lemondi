@@ -1,7 +1,7 @@
 import { Component, instantiate } from "@bframe/core";
 import Fastify, { FastifyListenOptions, HTTPMethods } from 'fastify';
-import { Router, TRouterProps } from "./decorators/router";
-import { getDecoratorId, scan, scanClass, TScanClassResult } from "@bframe/scanner";
+import { Router } from "./decorators/router";
+import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@bframe/scanner";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
 
 const DecoratorsToHttpMethodMap: Record<symbol, HTTPMethods> = {
@@ -13,11 +13,11 @@ const DecoratorsToHttpMethodMap: Record<symbol, HTTPMethods> = {
 }
 
 const RouteDecorators = [
-  getDecoratorId(Get),
-  getDecoratorId(Post),
-  getDecoratorId(Put),
-  getDecoratorId(Delete),
-  getDecoratorId(Options),
+  Get,
+  Post,
+  Put,
+  Delete,
+  Options,
 ];
 
 export class ModuleConfiguration {
@@ -36,21 +36,20 @@ export class FastifyModule {
     const routers = scan(Router);
 
     for (const router of routers) {
-      const props = router.decoratorProps as TRouterProps;
-      const classScan = scanClass(router.ctor);
-      const routerInstance = instantiate(router.ctor);
+      const routerInstance = instantiate(router);
+      const [routerDecorator] = findClassDecorators(router, Router);
 
-      console.log(`[${router.ctor.name}]`);
-      for (const prop of classScan) {
-        const routerProps = getRouteProps(prop);
+      console.log(`[${router.name}]`);
+
+      for (const prop of Reflect.ownKeys(router.prototype)) {
+        const routerProps = getRouteProps(router, prop);
         if (routerProps) {
-          const url = routerProps.isAbsolute ? routerProps.path : props?.path || '' + routerProps?.path;
+          const url = routerProps.isAbsolute ? routerProps.path : routerDecorator.decoratorProps?.path || '' + routerProps?.path;
           if (url) {
             fastify.route({
               method: routerProps.method,
               handler: async (...args) => {
-                const result = await Promise.resolve(routerInstance[prop.name].call(routerInstance, ...args));
-                return result;
+                return await Promise.resolve(routerInstance[prop].call(routerInstance, ...args));
               },
               url,
             });
@@ -65,15 +64,14 @@ export class FastifyModule {
   }
 }
 
-function getRouteProps (scanResult: TScanClassResult): TRouteProps & { method: HTTPMethods } | undefined {
-  if (scanResult.decorators && scanResult.decorators.length > 0) {
-    for (const decorator of scanResult.decorators) {
-      if (RouteDecorators.includes(decorator.decoratorId)) {
-        return {
-          ...(decorator.decoratorProps as TRouteProps),
-          method: DecoratorsToHttpMethodMap[decorator.decoratorId],
-        };
-      }
+function getRouteProps (ctor: TCtor, propName: string | symbol): TRouteProps & { method: HTTPMethods } | undefined {
+  for (const d of RouteDecorators) {
+    const [decorator] = findMethodDecorators(ctor, propName, d);
+    if (decorator) {
+      return {
+        ...decorator.decoratorProps,
+        method: DecoratorsToHttpMethodMap[decorator.decoratorId]
+      };
     }
   }
 

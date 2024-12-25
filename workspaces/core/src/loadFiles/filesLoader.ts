@@ -10,7 +10,7 @@ const getOsPattern = (path: string) => {
   return path;
 }
 
-export const Scanner = (() => {
+export const FilesLoader = (() => {
   async function importFiles (pattern: string) {
     const files = await glob(getOsPattern(pattern), {
       ignore: ["**/*.util.*"],

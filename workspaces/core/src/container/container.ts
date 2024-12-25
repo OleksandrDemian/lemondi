@@ -1,10 +1,5 @@
 import { getClassId } from "@bframe/scanner";
 
-export type TInfo = {
-  unique: Symbol;
-  type: 'class' | 'function';
-};
-
 const proxies: Record<symbol, any> = {};
 
 export const addProxy = (id: symbol, proxy: any) => {
@@ -41,5 +36,5 @@ export const getComponent = <T> (base: new (...args: any) => T): T => {
 };
 
 export const instantiate = <T>(ctor: new (...args: any) => T) => {
-  return new ctor(...getDependencies(ctor));
+  return Reflect.construct(ctor, getDependencies(ctor));
 };

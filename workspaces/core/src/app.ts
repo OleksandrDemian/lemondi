@@ -1,29 +1,24 @@
-import { getDependencies } from "./container/container";
-import { Scanner } from "./scan/scanner";
-import { scan } from "@bframe/scanner";
-import { AppInitializer } from "./decorators/AppInitializer";
+import { FilesLoader } from "./loadFiles/filesLoader";
 import { initComponents } from "./decorators/Component";
 import { initFactories } from "./decorators/Factory";
 
-export interface IApp {
-  onStart (): Promise<void>;
+export type TStartProps = {
+  onStart?: () => Promise<void>;
+  importFiles?: string[];
 }
 
-export const start = async () => {
-  const [appComponent] = scan(AppInitializer);
+export const start = (props: TStartProps) => {
+  const promises: Promise<any>[] = [];
+  for(const path of props.importFiles) {
+    promises.push(FilesLoader.importFiles(path));
+  }
 
-  if (appComponent) {
-    const importPaths = appComponent.decoratorProps.importFiles;
-    for(const path of importPaths) {
-      await Scanner.importFiles(path);
-    }
-
+  Promise.all(promises).then(() => {
     initComponents();
     initFactories();
 
-    const instance = Reflect.construct(appComponent.ctor, getDependencies(appComponent.ctor));
-    instance.onStart();
-  } else {
-    throw new Error("No app initializer");
-  }
+    if (props.onStart) {
+      props.onStart();
+    }
+  });
 };
