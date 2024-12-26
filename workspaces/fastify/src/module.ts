@@ -1,8 +1,9 @@
-import {Component, instantiate} from "@bframe/core";
-import Fastify, {FastifyInstance, FastifyListenOptions, HTTPMethods} from 'fastify';
+import {Component, Factory, Instantiate, instantiate, OnInit} from "@bframe/core";
+import Fastify, {FastifyInstance, HTTPMethods} from 'fastify';
 import { Router } from "./decorators/router";
 import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@bframe/scanner";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
+import {FastifyInitConfig, FastifyListenConfig} from "./configurations";
 
 const DecoratorsToHttpMethodMap: Record<symbol, HTTPMethods> = {
   [getDecoratorId(Get)]: "GET",
@@ -20,22 +21,32 @@ const RouteDecorators = [
   Options,
 ];
 
-export class ModuleConfiguration {
-  logger: boolean;
-  ignoreTrailingSlash: boolean;
-}
-
 @Component()
 export class FastifyModule {
   fastify: FastifyInstance;
 
   constructor (
-    private config: ModuleConfiguration,
+    private instanceConfig: FastifyInitConfig,
+    private listenConfig: FastifyListenConfig,
   ) {
-    this.fastify = Fastify(this.config);
+    this.fastify = Fastify(this.instanceConfig.getConfig());
   }
 
-  buildRoutes (): FastifyModule {
+  private getRouteProps (ctor: TCtor, propName: string | symbol): TRouteProps & { method: HTTPMethods } | undefined {
+    for (const d of RouteDecorators) {
+      const [decorator] = findMethodDecorators(ctor, propName, d);
+      if (decorator) {
+        return {
+          ...decorator.decoratorProps,
+          method: DecoratorsToHttpMethodMap[decorator.decoratorId]
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  private buildRoutes (): FastifyModule {
     const routers = scan(Router);
 
     for (const router of routers) {
@@ -44,7 +55,7 @@ export class FastifyModule {
       console.log(`[${router.name}]`);
 
       for (const prop of Reflect.ownKeys(router.prototype)) {
-        const routerProps = getRouteProps(router, prop);
+        const routerProps = this.getRouteProps(router, prop);
         if (routerProps) {
           const url = routerProps.isAbsolute ? routerProps.path : routerDecorator.decoratorProps?.path || '' + routerProps?.path;
           if (url) {
@@ -65,25 +76,9 @@ export class FastifyModule {
     return this;
   }
 
-  async listen (opts?: FastifyListenOptions) {
-    return this.fastify.listen(opts);
+  @OnInit()
+  async listen () {
+    this.buildRoutes();
+    return this.fastify.listen(this.listenConfig.getConfig());
   }
-
-  getFastifyInstance(): FastifyInstance {
-    return this.fastify;
-  }
-}
-
-function getRouteProps (ctor: TCtor, propName: string | symbol): TRouteProps & { method: HTTPMethods } | undefined {
-  for (const d of RouteDecorators) {
-    const [decorator] = findMethodDecorators(ctor, propName, d);
-    if (decorator) {
-      return {
-        ...decorator.decoratorProps,
-        method: DecoratorsToHttpMethodMap[decorator.decoratorId]
-      };
-    }
-  }
-
-  return undefined;
 }

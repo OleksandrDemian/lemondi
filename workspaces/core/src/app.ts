@@ -1,15 +1,16 @@
 import { FilesLoader } from "./filesLoader";
-import { getComponent } from "./container/container";
+import {instantiate} from "./container/container";
 import {initComponents, initFactories} from "./context";
 import {triggerAppEvent} from "./appEvents";
+import {findMethodDecorators} from "@bframe/scanner";
+import {OnInit} from "./decorators/Component";
 
-export type TStartProps<T extends any[]> = {
-  onStart?: (...instances: { [K in keyof T]: InstanceType<T[K]> }) => Promise<void>;
-  require: [...T],
+export type TStartProps = {
+  modules: any[],
   importFiles?: string[];
 };
 
-export const start = <TModules extends any[]>(props: TStartProps<TModules>) => {
+export const start = (props: TStartProps) => {
   (async () => {
     const promises: Promise<any>[] = [];
     for(const path of props.importFiles) {
@@ -21,16 +22,20 @@ export const start = <TModules extends any[]>(props: TStartProps<TModules>) => {
     initComponents();
     initFactories();
 
-    const instances: any = [];
+    triggerAppEvent("appLoaded");
 
-    for (const module of props.require) {
-      instances.push(getComponent(module));
+    for (const module of props.modules) {
+      const component = instantiate(module);
+
+      for (const prop of Reflect.ownKeys(module.prototype)) {
+        const [onInit] = findMethodDecorators(module, prop, OnInit);
+
+        if (onInit) {
+          await Promise.resolve(component[prop]());
+        }
+      }
     }
 
-    triggerAppEvent("beforeStart");
-    if (props.onStart) {
-      await props.onStart(...instances);
-    }
-    triggerAppEvent("afterStart");
+    triggerAppEvent("appStarted");
   })();
 };
