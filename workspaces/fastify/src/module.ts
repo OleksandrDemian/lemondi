@@ -1,7 +1,7 @@
-import {Component, Factory, Instantiate, instantiate, OnInit} from "@bframe/core";
+import {Component, Factory, Instantiate, instantiate, OnInit} from "@lemondi/core";
 import Fastify, {FastifyInstance, HTTPMethods} from 'fastify';
 import { Router } from "./decorators/router";
-import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@bframe/scanner";
+import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@lemondi/scanner";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
 import {FastifyInitConfig, FastifyListenConfig} from "./configurations";
 

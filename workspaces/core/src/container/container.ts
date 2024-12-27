@@ -1,4 +1,4 @@
-import {getClassId} from "@bframe/scanner";
+import {getClassId} from "@lemondi/scanner";
 
 const proxies: Record<symbol, any> = {};
 

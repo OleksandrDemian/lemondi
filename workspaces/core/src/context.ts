@@ -1,4 +1,4 @@
-import {assignClassId, findMethodDecorators, getClassId, scan} from "@bframe/scanner";
+import {assignClassId, findMethodDecorators, getClassId, scan} from "@lemondi/scanner";
 import {addProxy, getDependencies, instantiate} from "./container/container";
 import {Component, OnAppEvent} from "./decorators/Component";
 import {Factory, Instantiate} from "./decorators/Factory";

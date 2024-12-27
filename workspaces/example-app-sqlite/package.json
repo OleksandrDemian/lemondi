@@ -1,13 +1,13 @@
 {
-  "name": "@bframe/examle-sqlite",
-  "version": "0.0.0",
+  "name": "@lemondi/examle-sqlite",
+  "version": "0.0.0-alpha.1",
   "license": "MIT",
   "scripts": {
     "build": "rimraf ./dist && tsc",
     "start": "yarn build && node ./dist/app.js"
   },
   "dependencies": {
-    "@bframe/core": "0.0.0",
+    "@lemondi/core": "0.0.0-alpha.1",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7"
   }

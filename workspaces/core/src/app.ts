@@ -2,7 +2,7 @@ import { FilesLoader } from "./filesLoader";
 import {instantiate} from "./container/container";
 import {initComponents, initFactories} from "./context";
 import {triggerAppEvent} from "./appEvents";
-import {findMethodDecorators} from "@bframe/scanner";
+import {findMethodDecorators} from "@lemondi/scanner";
 import {OnInit} from "./decorators/Component";
 
 export type TStartProps = {

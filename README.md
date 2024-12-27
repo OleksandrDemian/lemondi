@@ -1,51 +1,50 @@
-# @bframe
+# :lemon: LemonDI
 
-**@bframe** is a powerful and flexible Dependency Injection (DI) framework for TypeScript. It leverages decorators to simplify the setup and management of application components, enabling developers to easily create and manage complex applications.
+**LemonDI** is a decorator-based Dependency Injection (DI) 💉 framework for TypeScript. By leveraging decorators, it simplifies the setup and management of application components, allowing developers to easily create and manage complex applications.
 
-**@bframe** consists of multiple modules that work together to help you build modular, scalable, and maintainable applications. These modules include:
+The framework consists of the following modules:
 
-- **`@bframe/core`**: The core DI system, providing essential functionality for managing components, their lifecycle, and events.
-- **`@bframe/scanner`**: A decorator scanning utility that helps find and manage class and method decorators.
+- **`@lemondi/core`**: The core DI system that provides essential functionality for managing components, their lifecycle, and events.
+- **`@lemondi/scanner`**: A utility that scans and manages class and method decorators, helping you organize and manage your decorators effectively.
 
-## Table of Contents
+## :page_with_curl: Table of Contents
 
-- [Installation](#installation)
-- [Modules](#modules)
-  - [Core Module](#core-module)
-  - [Scanner Module](#scanner-module)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+- [Installation](#inbox_tray-installation)
+- [Modules](#blue_book-modules)
+  - [Core Module](#syringe-core-module)
+  - [Scanner Module](#mag-scanner-module)
+- [Example](#pencil2-example-app-basics)
+- [Caveats](#warning-caveats)
 
-## Installation
+## :inbox_tray: Installation
 
-To install the full **@bframe** suite, you can install it as a monorepo or install individual modules. For example:
+You can install the full **@lemondi** suite as a monorepo or install individual modules. For example:
 
 ```bash
 # To install all modules
-npm install @bframe/core @bframe/scanner
+npm install @lemondi/core @lemondi/scanner
 ```
 
-## Modules
+## :blue_book: Modules
 
-### Core module
+### :syringe: Core Module
 
-The **`@bframe/core`** module provides the essential infrastructure for dependency injection in BFrame. It enables the definition of components, event listeners, and the automatic instantiation of services. You can easily integrate with external libraries, build and manage components, and configure app lifecycle events.
+The **`@lemondi/core`** module is the backbone of the LemonDI framework, providing all the essential infrastructure for dependency injection. It enables you to define components, manage event listeners, and automatically instantiate services. You can seamlessly integrate with external libraries, build and manage components, and configure app lifecycle events.
 
 - **Key Features**:
   - Component management using decorators.
   - Seamless integration with external libraries through factory functions.
-  - DI core system
+  - A powerful DI core system that simplifies complex applications.
 
-### Scanner module
+### :mag: Scanner Module
 
-The **`@bframe/scanner`** module is responsible for scanning and managing decorators in your application. It provides utilities to find and manage class and method decorators, which are essential for DI frameworks. This module helps in discovering components and applying decorators to classes and methods in a dynamic way.
+The **`@lemondi/scanner`** module is responsible for scanning and managing decorators in your application. It provides utilities for discovering and managing class and method decorators, which are essential in DI frameworks. This module helps in applying decorators to classes and methods dynamically, improving modularity and flexibility.
 
-## Example app
+## :pencil2: Example App: Basics
 
-**Configure typesctipt**
+### **Configure TypeScript**
 
-In order for the decorators to work properly you need to enable `experimentalDecorators` and `emitDecoratorMetadata`:
+To ensure decorators work properly, you need to enable `experimentalDecorators` and `emitDecoratorMetadata` in your TypeScript configuration:
 
 ```json
 {
@@ -59,43 +58,37 @@ In order for the decorators to work properly you need to enable `experimentalDec
 }
 ```
 
-**Dependnecies**
+### **NPM Packages**
 
-In this example we will build a simple app that interacts with in memory sqlite. Install the following dependencies:
+In this example, we'll build a simple app that interacts with an in-memory SQLite database. First, install the necessary dependencies:
 
 ```bash
-npm install @bframe/core sequelize sqlite3
+npm install @lemondi/core sequelize sqlite3 tsc
 ```
 
-**App code**
+### **App Code**
 
-In this example we will have 1 external library (`sequelize`) to be shared across multiple services. Since we cannot decorate `Sequelize` with `@Component` we will use `@Factory` to instantiate it.
+In this example, we'll use one external library (`sequelize`) shared across multiple services. Since `Sequelize` can't be directly decorated with `@Component`, we'll use `@Factory` to instantiate it.
 
 ```typescript
-import { Component, Factory, Instantiate, OnInit, start } from "@bframe/core";
+import { Component, Factory, Instantiate, OnInit, start } from "@lemondi/core";
 import { Sequelize } from "sequelize";
 
 @Factory()
 class DatabaseFactory {
-  // factories provide a convenient way to integrate with external libraries by instantiating components manually
+  // Factories allow you to integrate external libraries by manually instantiating components
   @Instantiate()
-  createSequelizeInstance(): Sequelize { // explicit return type is required for factory instances to map injections
-    // this method will run automatically and create a Sequelize instance
-    // this instance will be injected in all components/factories
+  createSequelizeInstance(): Sequelize { 
+    // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }
-  // you can inject other components in factory functions. For example:
-  //   @Instantiate()
-  //   createSequelizeInstance(config: Config): Sequelize {
-  //      // config property is injected
-  //   }
 }
 
-@Component() // mark car service as component. It will be instantiated automatically and injected when needed
+@Component() // Marks CarService as a component that will be automatically instantiated
 class CarService {
   constructor(
-    // db instance is injected from DatabaseFactory.createSequelizeInstance()
-    private db: Sequelize, // private modifier means the instance is associated to the class, no need for this.db = db
+    // The Sequelize instance is injected from DatabaseFactory.createSequelizeInstance()
+    private db: Sequelize, 
   ) { }
 
   async migrate() {
@@ -114,13 +107,13 @@ class CarService {
 @Component()
 class UserService {
   constructor(
-    private db: Sequelize, // same Sequelize instance as in CarService
+    private db: Sequelize, // Same Sequelize instance as in CarService
   ) { }
 
   async migrate() {
     await this.db.query(`CREATE TABLE users (id int, name VARCHAR)`);
   }
-  // ... implement all the methods
+  // ... other methods for user management
 }
 
 @Component()
@@ -130,14 +123,15 @@ class App {
     private carService: CarService,
   ) { }
 
-  @OnInit() // @OnInit decorator only works for components directly imported in `start` (`modules`)
+  @OnInit() // @OnInit decorator only works for components directly imported in `start`
   async onStart() {
-    // create tables necessary for the test
+    // Create necessary tables
     await Promise.all([
       this.carService.migrate(),
       this.userService.migrate(),
     ]);
 
+    // Insert a car record and log it
     await this.carService.insertCar(0, "hello");
     const [cars] = await this.carService.getCars();
     console.log(cars); // prints [ { id: 0, model: 'hello' } ]
@@ -146,7 +140,76 @@ class App {
 
 // Bootstrap application
 start({
-  importFiles: [], // for this example we do not need to import project files
-  modules: [App],  // entry point, classes listed here will be instantiated right away
+  importFiles: [], // No extra files are needed for this example
+  modules: [App],  // The entry point; classes listed here will be instantiated automatically
+});
+```
+
+Once the app is ready, you can build it with the TypeScript compiler (TSC) and run it using Node.js. Assuming the code is in `src/app.ts`, execute the following commands:
+
+```bash
+tsc && node ./dist/app.js
+```
+
+## :warning: Caveats
+
+### :no_entry_sign: Types and Interfaces Are Not Supported
+
+Currently, the implementation relies on TypeScript and `reflect-metadata`, which means type information is erased during the build process. As a result, it isn't possible to retain `type` or `interface` data in the runtime.
+
+However, there's a plan to eventually remove the `reflect-metadata` library and transition to a custom build system that extracts the necessary information before building the app. This change will provide better support for DI in LemonDI.
+
+In the meantime, you can work around this limitation by wrapping types and interfaces in classes. For instance, to inject a Fastify configuration object (which is an interface), you can create a wrapper class:
+
+```typescript
+import Fastify, { FastifyInstance, FastifyListenOptions } from "fastify";
+import { Component } from "@lemondi/core";
+
+@Component()
+export class FastifyListenConfig {
+  config: FastifyListenOptions;
+
+  constructor() {
+    this.config = {
+      port: process.env.PORT, // or inject environment configuration in constructor
+    };
+  }
+
+  get() {
+    return this.config;
+  }
+}
+
+@Component()
+export class FastifyService {
+  server: FastifyInstance;
+
+  constructor(
+    private config: FastifyListenConfig,
+  ) {
+    this.server = Fastify();
+  }
+
+  start() {
+    this.server.listen(this.config.get());
+  }
+}
+
+@Component()
+class App {
+  constructor(
+    private fastifyService: FastifyService,
+  ) { }
+
+  @OnInit()
+  async onStart() {
+    this.fastifyService.start();
+  }
+}
+
+// Bootstrap application
+start({
+  importFiles: [], // No additional files are needed for this example
+  modules: [App],   // The entry point for instantiating classes
 });
 ```

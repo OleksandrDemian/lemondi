@@ -1,10 +1,10 @@
-# BFrame Fastify Module (`@bframe/fastify`)
+# LemonDI Fastify Module (`@lemondi/fastify`)
 
 ## Overview
 
-`@bframe/fastify` is an integration module of the **BFrame** library that brings Fastify web framework support into the BFrame Dependency Injection (DI) ecosystem. With this module, you can easily define routes, handle HTTP requests using decorators, and start a Fastify server with seamless DI integration.
+`@lemondi/fastify` is an integration module of the **LemonDI** library that brings Fastify web framework support into the LemonDI Dependency Injection (DI) ecosystem. With this module, you can easily define routes, handle HTTP requests using decorators, and start a Fastify server with seamless DI integration.
 
-This module allows developers to use the power of Fastify to build fast and scalable web servers while benefiting from BFrame's decorator-based DI approach.
+This module allows developers to use the power of Fastify to build fast and scalable web servers while benefiting from LemonDI's decorator-based DI approach.
 
 ## Table of Contents
 
@@ -20,16 +20,16 @@ This module allows developers to use the power of Fastify to build fast and scal
 
 ## Installation
 
-To install the `@bframe/fastify` module, run the following command in your project directory:
+To install the `@lemondi/fastify` module, run the following command in your project directory:
 
 ```bash
-npm install @bframe/fastify
+npm install @lemondi/fastify
 ```
 
 Or if you're using Yarn:
 
 ```bash
-yarn add @bframe/fastify
+yarn add @lemondi/fastify
 ```
 
 ## API Documentation
@@ -40,7 +40,7 @@ yarn add @bframe/fastify
   This decorator is used to mark a class as a Fastify router. It indicates that the class contains HTTP route handlers for Fastify.
 
     ```typescript
-    import { Router } from '@bframe/fastify';
+    import { Router } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -54,7 +54,7 @@ yarn add @bframe/fastify
   Marks a method as handling `GET` requests. It optionally accepts an object with a `path` for the route and an `isAbsolute` flag to specify whether the path is absolute.
 
     ```typescript
-    import { Get } from '@bframe/fastify';
+    import { Get } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -72,7 +72,7 @@ yarn add @bframe/fastify
   Marks a method as handling `POST` requests.
 
     ```typescript
-    import { Post } from '@bframe/fastify';
+    import { Post } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -90,7 +90,7 @@ yarn add @bframe/fastify
   Marks a method as handling `PUT` requests.
 
     ```typescript
-    import { Put } from '@bframe/fastify';
+    import { Put } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -108,7 +108,7 @@ yarn add @bframe/fastify
   Marks a method as handling `DELETE` requests.
 
     ```typescript
-    import { Delete } from '@bframe/fastify';
+    import { Delete } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -126,7 +126,7 @@ yarn add @bframe/fastify
   Marks a method as handling `OPTIONS` requests. This is typically used for CORS pre-flight requests or other custom handling.
 
     ```typescript
-    import { Options } from '@bframe/fastify';
+    import { Options } from '@lemondi/fastify';
 
     @Router({
       path: "/api/users"
@@ -174,7 +174,7 @@ yarn add @bframe/fastify
 
 ### 1. Define Routes Using Decorators
 
-In this example, we define a simple set of routes using BFrame decorators:
+In this example, we define a simple set of routes using LemonDI decorators:
 
 ```typescript
 import { FastifyReply, FastifyRequest } from "fastify";
@@ -182,7 +182,7 @@ import {
   Get,
   Post,
   Router,
-} from "@bframe/fastify";
+} from "@lemondi/fastify";
 import { UsersService } from "../services/users";
 import { TUserCreation } from "../models/users";
 
@@ -228,8 +228,8 @@ Next, we configure and start the Fastify server:
 import {
   FilesLoader,
   start,
-} from "@bframe/core";
-import {FastifyModule} from "@bframe/fastify";
+} from "@lemondi/core";
+import {FastifyModule} from "@lemondi/fastify";
 import {AppConfiguration} from "./configuration/configuration";
 import {Sequelize} from "sequelize";
 
@@ -257,8 +257,8 @@ start({
 You can customize Fastify's configuration by exporting a custom configuration class:
 
 ```typescript
-import {Factory, Instantiate} from "@bframe/core";
-import {FastifyModule, ModuleConfiguration} from "@bframe/fastify";
+import {Factory, Instantiate} from "@lemondi/core";
+import {FastifyModule, ModuleConfiguration} from "@lemondi/fastify";
 
 @Factory()
 export class FastifyConfig {

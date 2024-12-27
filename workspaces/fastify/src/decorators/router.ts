@@ -1,4 +1,4 @@
-import { createClassDecorator } from "@bframe/scanner";
+import { createClassDecorator } from "@lemondi/scanner";
 
 export type TRouterProps = {
   path: string;

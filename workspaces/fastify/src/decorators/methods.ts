@@ -1,4 +1,4 @@
-import { createMethodDecorator } from "@bframe/scanner";
+import { createMethodDecorator } from "@lemondi/scanner";
 
 export type TRouteProps = {
   isAbsolute?: boolean;

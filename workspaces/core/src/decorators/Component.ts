@@ -1,12 +1,7 @@
 import {
   createClassDecorator,
   createMethodDecorator,
-  findClassDecorators,
-  findMethodDecorators,
-  getClassId,
-  scan
-} from "@bframe/scanner";
-import {addProxy, getDependencies, instantiate} from "../container/container";
+} from "@lemondi/scanner";
 
 export const Component = createClassDecorator("Component");
 export const OnAppEvent = createMethodDecorator<{

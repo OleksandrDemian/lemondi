@@ -1,4 +1,4 @@
-import {Component, Factory, Instantiate, OnInit, start} from "@bframe/core";
+import {Component, Factory, Instantiate, OnInit, start} from "@lemondi/core";
 import { Sequelize } from "sequelize";
 
 @Factory()
