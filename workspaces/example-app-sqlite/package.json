@@ -7,7 +7,7 @@
     "start": "yarn build && node ./dist/app.js"
   },
   "dependencies": {
-    "@lemondi/core": "0.0.0-alpha.1",
+    "@lemondi/core": "0.0.0-alpha.2",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7"
   }

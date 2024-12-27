@@ -1,6 +1,6 @@
 {
   "name": "@lemondi/core",
-  "version": "0.0.0-alpha.1",
+  "version": "0.0.0-alpha.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
@@ -14,10 +14,16 @@
     "fast-glob": "^3.3.2",
     "reflect-metadata": "^0.2.2",
     "rimraf": "^6.0.1",
-    "@lemondi/scanner": "0.0.0-alpha.1"
+    "@lemondi/scanner": "0.0.0-alpha.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OleksandrDemian/lemondi.git"
+  },
+  "homepage": "https://github.com/OleksandrDemian/lemondi",
+  "author": "oleksandrovsky@gmail.com"
 }
