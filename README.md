@@ -63,7 +63,7 @@ To ensure decorators work properly, you need to enable `experimentalDecorators` 
 In this example, we'll build a simple app that interacts with an in-memory SQLite database. First, install the necessary dependencies:
 
 ```bash
-npm install @lemondi/core sequelize sqlite3 tsc
+npm install @lemondi/core sequelize sqlite3 tsc typescript
 ```
 
 ### **App Code**
@@ -145,10 +145,21 @@ start({
 });
 ```
 
-Once the app is ready, you can build it with the TypeScript compiler (TSC) and run it using Node.js. Assuming the code is in `src/app.ts`, execute the following commands:
+Once the app is ready, you can build it with the TypeScript compiler (TSC) and run it using Node.js. Assuming the code is in `src/app.ts`, let's add the following command to the `package.json`:
+```json
+{
+  // ...
+  "scripts": {
+    // ...
+    "start": "tsc && node ./dist/app.js"
+  },
+  // ...
+}
+```
 
+This command will build and run the application. You can run it using your package manager of choice, for example (I will use NPM as it is the most popular):
 ```bash
-tsc && node ./dist/app.js
+npm run start
 ```
 
 ## :warning: Caveats
