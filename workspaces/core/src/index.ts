@@ -1,6 +1,6 @@
 import "reflect-metadata";
 export * from "./app";
-export * from "./container/container";
+export * from "./container/di";
 export * from "./decorators/Component";
 export * from "./decorators/Factory";
 export * from "./filesLoader";
