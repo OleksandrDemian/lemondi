@@ -89,8 +89,10 @@ import { Sequelize } from "sequelize";
 @Factory()
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
-  @Instantiate()
-  createSequelizeInstance(): Sequelize { // explicit return type is required, only classes can be used as factory types
+  @Instantiate({
+    qualifiers: [Sequelize]
+  })
+  createSequelizeInstance() { // explicit return type is required, only classes can be used as factory types
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }

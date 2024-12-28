@@ -77,8 +77,10 @@ import { Sequelize } from "sequelize";
 @Factory()
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
-  @Instantiate()
-  createSequelizeInstance(): Sequelize { 
+  @Instantiate({
+    qualifiers: [Sequelize]
+  })
+  createSequelizeInstance() { 
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }
@@ -224,3 +226,5 @@ start({
   modules: [App],   // The entry point for instantiating classes
 });
 ```
+
+Otherwise you can use qualifiers as seen in the [App code example](#app-code) (see Sequelize).
