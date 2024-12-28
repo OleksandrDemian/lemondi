@@ -1,79 +1,39 @@
-import {Component, Factory, Instantiate, OnInit, start} from "@lemondi/core";
-import { Sequelize } from "sequelize";
+import "reflect-metadata";
 
-@Factory()
-class DatabaseFactory {
-  // factories provide a convenient way to integrate with external libraries by instantiating components manually
-  @Instantiate({
-    qualifiers: [Sequelize] // use this instance when Sequelize is requested
-  })
-  createSequelizeInstance() { // explicit return type is required for factory instances to map injections
-    // you can inject other components in factory functions. For example:
-    //   @Instantiate()
-    //   createSequelizeInstance(config: Config): Sequelize {
-    //      // config property is injected
-    //   }
-    // this method will run automatically and create a Sequelize instance
-    // this instance will be injected in all components/factories
-    return new Sequelize("sqlite::memory");
-  }
-}
-
-@Component() // mark car service as component. It will be instantiated automatically and injected when needed
-class CarService {
-  constructor(
-    // db instance is injected from DatabaseFactory.createSequelizeInstance()
-    private db: Sequelize, // private modifier means the instance is associated to the class, no need for this.db = db
-  ) { }
-
-  async migrate() {
-    await this.db.query(`CREATE TABLE cars (id int, model VARCHAR)`);
-  }
-
-  getCars () {
-    return this.db.query("SELECT * FROM cars");
-  }
-
-  insertCar(id: number, model: string) {
-    return this.db.query(`INSERT INTO cars VALUES (${id}, '${model}')`);
-  }
-}
-
-@Component()
-class UserService {
-  constructor(
-    private db: Sequelize, // same Sequelize instance as in CarService
-  ) { }
-
-  async migrate() {
-    await this.db.query(`CREATE TABLE users (id int, name VARCHAR)`);
-  }
-  // ... implement all the methods
-}
+import {Component, FilesLoader, OnInit, start} from "@lemondi/core";
+import {UsersService} from "./services/users";
+import {User} from "./models/user.entity";
 
 @Component()
 class App {
   constructor(
-    private userService: UserService,
-    private carService: CarService,
+    private usersService: UsersService,
   ) { }
 
-  @OnInit() // @OnInit decorator only works for components directly imported in `start` (`modules`)
+  // @OnInit decorator only works for components directly imported in `start`
+  // @OnInit decorator tells the system to execute this method after the component is instantiated
+  @OnInit()
   async onStart() {
-    // create tables necessary for the test
-    await Promise.all([
-      this.carService.migrate(),
-      this.userService.migrate(),
-    ]);
+    // create a new entry
+    const user = User.fromJson({
+      lastName: "Last",
+      firstName: "First",
+    });
 
-    await this.carService.insertCar(0, "hello");
-    const [cars] = await this.carService.getCars();
-    console.log(cars); // prints [ { id: 0, model: 'hello' } ]
+    // save user in DB
+    await this.usersService.save(user);
+
+    // fetch user from DB
+    const users = await this.usersService.find();
+    console.log(users); // will print data fetched from DB
   }
 }
 
-// Bootstrap application
+// start method is required to start the app
 start({
-  importFiles: [], // for this example we do not need to import project files
-  modules: [App],  // entry point, classes listed here will be instantiated right away
+  importFiles: [
+    // since there is no need to reference factories in the code, we need to tell our DI system to import those files to make sure they are accessible
+    FilesLoader.buildPath(__dirname, "factories", "**", "*.js"),
+  ],
+  modules: [App], // The entry point; classes listed here will be instantiated automatically
 });

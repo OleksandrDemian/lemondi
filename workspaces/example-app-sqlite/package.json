@@ -1,14 +1,24 @@
 {
-  "name": "@lemondi/example-sqlite",
-  "version": "0.0.0-alpha.4",
-  "license": "MIT",
+  "name": "@lemondi/test",
+  "version": "0.0.0",
+  "description": "",
+  "main": "src/app.ts",
   "scripts": {
-    "build": "rimraf ./dist && tsc",
-    "start": "yarn build && node ./dist/app.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "tsc && node ./dist/app.js"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@lemondi/core": "0.0.0-alpha.4",
-    "sequelize": "^6.37.5",
-    "sqlite3": "^5.1.7"
+    "@lemondi/core": "^0.0.0-alpha.4",
+    "class-transformer": "^0.5.1",
+    "reflect-metadata": "^0.2.2",
+    "sqlite3": "^5.1.7",
+    "tsc": "^2.0.4",
+    "typeorm": "^0.3.20",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
   }
 }
