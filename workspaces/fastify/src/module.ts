@@ -46,11 +46,11 @@ export class FastifyModule {
     return undefined;
   }
 
-  private buildRoutes (): FastifyModule {
+  private async buildRoutes () {
     const routers = scan(Router);
 
     for (const router of routers) {
-      const routerInstance = instantiate(router);
+      const routerInstance = await instantiate(router);
       const [routerDecorator] = findClassDecorators(router, Router);
       console.log(`[${router.name}]`);
 
@@ -78,7 +78,7 @@ export class FastifyModule {
 
   @OnInit()
   async listen () {
-    this.buildRoutes();
+    await this.buildRoutes();
     return this.fastify.listen(this.listenConfig.getConfig());
   }
 }

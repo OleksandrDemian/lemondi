@@ -4,8 +4,10 @@ import { Sequelize } from "sequelize";
 @Factory()
 class DatabaseFactory {
   // factories provide a convenient way to integrate with external libraries by instantiating components manually
-  @Instantiate()
-  createSequelizeInstance(): Sequelize { // explicit return type is required for factory instances to map injections
+  @Instantiate({
+    qualifiers: [Sequelize] // use this instance when Sequelize is requested
+  })
+  createSequelizeInstance() { // explicit return type is required for factory instances to map injections
     // you can inject other components in factory functions. For example:
     //   @Instantiate()
     //   createSequelizeInstance(config: Config): Sequelize {

@@ -1,7 +1,7 @@
 import {FilesLoader} from "./filesLoader";
 import {addComponentProto, getDependencies, instantiate, TComponentProto} from "./container/di";
 import {addAppListener, triggerAppEvent} from "./container/appEvents";
-import {assignClassId, findMethodDecorators, getClassId, scan} from "@lemondi/scanner";
+import {assignClassId, findClassDecorators, findMethodDecorators, getClassId, scan, TCtor} from "@lemondi/scanner";
 import {Component, OnAppEvent, OnInit} from "./decorators/Component";
 import {Factory, Instantiate} from "./decorators/Factory";
 
@@ -13,7 +13,17 @@ export type TStartProps = {
 export const initComponents = async () => {
   const components = scan(Component);
   for (const component of components) {
-    const classId = getClassId(component);
+    const [decorator] = findClassDecorators(component, Component);
+    let qualifiers: (symbol | string)[] = [assignClassId(component)];
+    if (decorator.decoratorProps) {
+      for (const q of decorator.decoratorProps.qualifiers) {
+        if (typeof q === "symbol" || typeof q === "string") {
+          qualifiers.push(q);
+        } else {
+          qualifiers.push(assignClassId(q as TCtor));
+        }
+      }
+    }
 
     const factory = ((): TComponentProto => {
       let value: any = undefined;
@@ -30,7 +40,7 @@ export const initComponents = async () => {
       }
     })();
 
-    addComponentProto(classId, factory);
+    addComponentProto(qualifiers, factory);
 
     for (const method of Reflect.ownKeys(component.prototype)) {
       const [appEventListener] = findMethodDecorators(component, method, OnAppEvent);
@@ -57,9 +67,15 @@ export async function initFactories () {
 
     for (const factoryComponent of Reflect.ownKeys(f.prototype)) {
       const [decorator] = findMethodDecorators(f, factoryComponent as string, Instantiate);
-      if (decorator) {
-        const returnType = Reflect.getMetadata('design:returntype', f.prototype, factoryComponent);
-        const returnClassId = assignClassId(returnType);
+      if (decorator && decorator.decoratorProps) {
+        let qualifiers: (symbol | string)[] = [];
+        for (const q of decorator.decoratorProps.qualifiers) {
+          if (typeof q === "symbol" || typeof q === "string") {
+            qualifiers.push(q);
+          } else {
+            qualifiers.push(assignClassId(q as TCtor));
+          }
+        }
 
         const factory = (): TComponentProto => {
           let value: any = undefined;
@@ -77,7 +93,7 @@ export async function initFactories () {
           }
         };
 
-        addComponentProto(returnClassId, factory());
+        addComponentProto(qualifiers, factory());
       }
     }
   }
