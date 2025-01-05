@@ -35,19 +35,29 @@ export const ClassPath = (() => {
 })();
 
 export const LemonAssign = (() => {
+  function createMethod (ctor: TCtor, method: string) {
+    if (!ctor.prototype[ClassPathSymbols.METHODS]) {
+      ctor.prototype[ClassPathSymbols.METHODS] = {};
+    }
+
+    if (!ctor.prototype[ClassPathSymbols.METHODS][method]) {
+      ctor.prototype[ClassPathSymbols.METHODS][method] = {
+        args: undefined,
+        ret: undefined,
+        decorators: [],
+      };
+    }
+  }
+
   function ctorArgs (ctor: TCtor, args: TArgument[]) {
     ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args;
   }
 
   function method(ctor: TCtor, method: string, args: TArgument[], ret: TArgument) {
-    if (!ctor.prototype[ClassPathSymbols.METHODS]) {
-      ctor.prototype[ClassPathSymbols.METHODS] = {};
-    }
+    createMethod(ctor, method);
 
-    ctor.prototype[ClassPathSymbols.METHODS][method] = {
-      args,
-      ret,
-    };
+    ctor.prototype[ClassPathSymbols.METHODS][method].args = args;
+    ctor.prototype[ClassPathSymbols.METHODS][method].ret = ret;
   }
 
   function classDecorator(ctor: TCtor, decorator: any, props: any) {
@@ -64,10 +74,22 @@ export const LemonAssign = (() => {
     });
   }
 
+  function methodDecorator (ctor: TCtor, method: string, decorator: any, props: any) {
+    const decoratorId = assignDecoratorId(decorator);
+    createMethod(ctor, method);
+
+    ctor.prototype[ClassPathSymbols.METHODS][method].decorators.push({
+      id: decoratorId,
+      ctor: decorator,
+      props,
+    })
+  }
+
   return {
     ctorArgs,
     method,
     classDecorator,
+    methodDecorator,
   };
 })();
 

@@ -1,7 +1,3 @@
-/**
- * WORK IN PROGRESS
- */
-
 const { Project, Type } = require("ts-morph");
 const path = require("path");
 
@@ -157,21 +153,49 @@ async function run () {
           nextIndex(),
           `LemonAssign.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`,
         );
+
+        const methodDecorators = method.getDecorators();
+        for (const decorator of methodDecorators) {
+          const props = decorator.getArguments()[0];
+          let propsVarName;
+
+          if (props) {
+            propsVarName = "prop" + getProgressiveNumber();
+            file.insertVariableStatement(ctor.getChildIndex(), {
+              declarationKind: "const",
+              declarations: [{
+                name: propsVarName,
+                initializer: props.getText(),
+              }],
+            });
+
+            props.replaceWithText(propsVarName);
+          }
+
+          file.insertStatements(
+            nextIndex(),
+            `LemonAssign.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`,
+          );
+        }
       }
 
       const classDecorators = ctor.getDecorators();
       for (const decorator of classDecorators) {
         const props = decorator.getArguments()[0];
-        const propsVarName = "prop" + getProgressiveNumber();
-        file.insertVariableStatement(ctor.getChildIndex(), {
-          declarationKind: "const",
-          declarations: [{
-            name: propsVarName,
-            initializer: props.getText(),
-          }],
-        });
+        let propsVarName;
+        if (props) {
+          propsVarName = "prop" + getProgressiveNumber();
+          file.insertVariableStatement(ctor.getChildIndex(), {
+            declarationKind: "const",
+            declarations: [{
+              name: propsVarName,
+              initializer: props.getText(),
+            }],
+          });
 
-        props.replaceWithText(propsVarName);
+          props.replaceWithText(propsVarName);
+        }
+
         file.insertStatements(
           nextIndex(),
           `LemonAssign.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`,
