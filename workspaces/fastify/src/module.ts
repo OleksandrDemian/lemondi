@@ -1,8 +1,7 @@
 import {Component, instantiate, OnInit} from "@lemondi/core";
-import Fastify, {FastifyInstance, HTTPMethods} from 'fastify';
+import Fastify, {FastifyHttpOptions, FastifyInstance, FastifyListenOptions, HTTPMethods} from 'fastify';
 import { Router } from "./decorators/router";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
-import {FastifyInitConfig, FastifyListenConfig} from "./configurations";
 import {ClassPath, ClassUtils, TMethodHandler} from "@lemondi/classpath";
 
 const DecoratorsToHttpMethodMap: Record<symbol, HTTPMethods> = {
@@ -26,10 +25,10 @@ export class FastifyModule {
   fastify: FastifyInstance;
 
   constructor (
-    private instanceConfig: FastifyInitConfig,
-    private listenConfig: FastifyListenConfig,
+    private instanceConfig: FastifyHttpOptions<any>,
+    private listenConfig: FastifyListenOptions,
   ) {
-    this.fastify = Fastify(this.instanceConfig.getConfig());
+    this.fastify = Fastify(this.instanceConfig);
   }
 
   private getRouteProps (method: TMethodHandler): TRouteProps & { method: HTTPMethods } | undefined {
@@ -82,6 +81,6 @@ export class FastifyModule {
   @OnInit()
   async listen () {
     await this.buildRoutes();
-    return this.fastify.listen(this.listenConfig.getConfig());
+    return this.fastify.listen(this.listenConfig);
   }
 }

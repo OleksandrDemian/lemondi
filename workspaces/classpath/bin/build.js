@@ -5,8 +5,10 @@ const {
   createIncrementalValue,
   generatePackage,
   stringifyArgsType,
-  typeToString,
+  getDependencies,
 } = require("./utils");
+const fs = require("fs");
+const {TypeIdResolver} = require("./typeIdResolver");
 
 const getProgressiveNumber = createIncrementalValue(0);
 
@@ -16,8 +18,11 @@ async function run () {
     tsConfigFilePath: "./tsconfig.json",
   });
 
+  const packageJson = JSON.parse(fs.readFileSync("package.json", "utf-8"));
+  TypeIdResolver.setDeps(getDependencies(packageJson));
+  TypeIdResolver.setProjectRoot(process.cwd());
+
   // add source files
-  project.addSourceFilesAtPaths("../src/**/*.ts");
   const files = project.getSourceFiles();
   for (const file of files) {
     const classes = file.getClasses();
@@ -29,10 +34,10 @@ async function run () {
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
       const constructorTypes = [];
       for (const p of parameters) {
-        constructorTypes.push(typeToString(pkg, p.getType()));
+        constructorTypes.push(TypeIdResolver.typeToString(file.getFilePath(), p.getType()));
       }
 
-      statements.push(`ClassPath.register({ id: "${pkg}.${ctor.getName()}", ctor: ${ctor.getName()} })`);
+      statements.push(`ClassPath.register({ id: "${pkg}#${ctor.getName()}", ctor: ${ctor.getName()} })`);
       statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
 
       for (const p of parameters) {
@@ -61,9 +66,9 @@ async function run () {
 
       const methods = ctor.getMethods();
       for (const method of methods) {
-        const ret = typeToString(pkg, method.getReturnType());
+        const ret = TypeIdResolver.typeToString(file.getFilePath(), method.getReturnType());
         const args = method.getParameters().map(
-          (p) => typeToString(pkg, p.getType()),
+          (p) => TypeIdResolver.typeToString(file.getFilePath(), p.getType()),
         );
 
         statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);

@@ -1,9 +1,8 @@
-const { Type } = require("ts-morph");
 const path = require("path");
 
 function generatePackage (filePath) {
   const parsed = path.parse(filePath);
-  return parsed.dir + '/' + parsed.name;
+  return path.relative(process.cwd(), parsed.dir + '/' + parsed.name).replace(/\\/g, '/');
 }
 
 /**
@@ -48,57 +47,6 @@ function removeGenericImports(inputString) {
   return inputString;
 }
 
-/**
- * @param {string} pkg
- * @param {Type} type
- * @returns {TParsedImport}
- */
-function typeToString (pkg, type) {
-  if (type.isUnionOrIntersection()) {
-    return {
-      typeId: "not-mapped",
-      isAsync: false,
-    };
-  } else {
-    let typeString = type.getText();
-    const isAsync = typeString.startsWith("Promise");
-    if (type.isObject()) {
-      if (isAsync) {
-        typeString = removePromiseAnnotation(typeString);
-      }
-
-      typeString = removeGenericImports(typeString);
-      const isImport = typeString.startsWith("import");
-      if (isImport) {
-        const { importPath, importType } = parseImportType(typeString);
-        return {
-          typeId: generatePackage(importPath) + "." + importType,
-          isAsync,
-        };
-      }
-
-      const isExplicit = typeString.includes("{");
-      if (isExplicit) {
-        return {
-          typeId: "object",
-          isAsync,
-        };
-      }
-
-      // is locally declared
-      return {
-        typeId: pkg + "." + typeString,
-        isAsync,
-      };
-    } else {
-      return {
-        typeId: type.getText(),
-        isAsync,
-      };
-    }
-  }
-}
-
 function parseImportType(input) {
   const regex = /import\(["'](.*)["']\)\.(\w+)/;
   const match = input.match(regex);
@@ -113,11 +61,37 @@ function parseImportType(input) {
   }
 }
 
+/**
+ * @param {any} pkgJson
+ * @returns {string[]}
+ */
+function getDependencies (pkgJson) {
+  const collection = [];
+  const deps = Object.keys(pkgJson.dependencies || {});
+  deps.forEach((d) => {
+    collection.push({
+      name: d,
+      isDev: false,
+    })
+  });
+
+  const devDeps = Object.keys(pkgJson.devDependencies || {});
+  devDeps.forEach((d) => {
+    collection.push({
+      name: d,
+      isDev: true,
+    })
+  });
+
+  return collection;
+}
+
 module.exports = {
   generatePackage,
   stringifyArgsType,
   createIncrementalValue,
   removePromiseAnnotation,
-  typeToString,
+  removeGenericImports,
   parseImportType,
+  getDependencies,
 }
