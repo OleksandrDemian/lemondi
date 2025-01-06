@@ -122,7 +122,9 @@ async function run () {
   const files = project.getSourceFiles();
   for (const file of files) {
     const classes = file.getClasses();
+
     for (const ctor of classes) {
+      const statements = [];
       const pkg = generatePackage(file.getFilePath());
 
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
@@ -131,16 +133,32 @@ async function run () {
         constructorTypes.push(typeToString(pkg, p.getType()));
       }
 
-      const nextIndex = createIncrementalValue(ctor.getChildIndex());
+      statements.push(`ClassPath.register({ id: "${pkg}.${ctor.getName()}", ctor: ${ctor.getName()} })`);
+      statements.push(`LemonAssign.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
 
-      file.insertStatements(
-        nextIndex(),
-        `ClassPath.register({ id: "${pkg}.${ctor.getName()}", ctor: ${ctor.getName()} })`,
-      );
-      file.insertStatements(
-        nextIndex(),
-        `LemonAssign.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`,
-      );
+      for (const p of parameters) {
+        const decorators = p.getDecorators();
+        for (let i = 0; i < decorators.length; i++) {
+          const decorator = decorators[i];
+          const props = decorator.getArguments()[0];
+          let propsVarName;
+
+          if (props) {
+            propsVarName = "prop" + getProgressiveNumber();
+            file.insertVariableStatement(ctor.getChildIndex(), {
+              declarationKind: "const",
+              declarations: [{
+                name: propsVarName,
+                initializer: props.getText(),
+              }],
+            });
+
+            props.replaceWithText(propsVarName);
+          }
+
+          statements.push(`LemonAssign.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
+        }
+      }
 
       const methods = ctor.getMethods();
       for (const method of methods) {
@@ -149,10 +167,7 @@ async function run () {
           (p) => typeToString(pkg, p.getType()),
         );
 
-        file.insertStatements(
-          nextIndex(),
-          `LemonAssign.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`,
-        );
+        statements.push(`LemonAssign.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {
@@ -172,10 +187,33 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          file.insertStatements(
-            nextIndex(),
-            `LemonAssign.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`,
-          );
+          statements.push(`LemonAssign.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
+        }
+
+        const parameters = method.getParameters();
+        for (let i = 0; i < parameters.length; i++) {
+          const parameter = parameters[i];
+          const decorators = parameter.getDecorators();
+          for (let i = 0; i < decorators.length; i++) {
+            const decorator = decorators[i];
+            const props = decorator.getArguments()[0];
+            let propsVarName;
+
+            if (props) {
+              propsVarName = "prop" + getProgressiveNumber();
+              file.insertVariableStatement(ctor.getChildIndex(), {
+                declarationKind: "const",
+                declarations: [{
+                  name: propsVarName,
+                  initializer: props.getText(),
+                }],
+              });
+
+              props.replaceWithText(propsVarName);
+            }
+
+            statements.push(`LemonAssign.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
+          }
         }
       }
 
@@ -196,15 +234,16 @@ async function run () {
           props.replaceWithText(propsVarName);
         }
 
-        file.insertStatements(
-          nextIndex(),
-          `LemonAssign.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`,
-        );
+        statements.push(`LemonAssign.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
       }
+
+      const nextIndex = createIncrementalValue(ctor.getChildIndex());
+      statements.forEach((s, i) => {
+        file.insertStatements(nextIndex(), s);
+      });
     }
   }
 
-  // await project.save();
   await project.emit();
 }
 

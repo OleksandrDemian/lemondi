@@ -7,15 +7,28 @@ import {assignDecoratorId} from "./utils";
 
 export type TCtor = new (...args: any[]) => any;
 
+export type TDecorator = {
+  id: symbol;
+  props: any;
+  ctor: TCtor;
+};
+
+export type TMethod = {
+  args: TArgument[];
+  ret: TArgument;
+  decorators: TDecorator[];
+};
+
 export type TArgument = {
   typeId: string;
   isAsync: boolean;
+  decorators: TDecorator[];
 };
 
 export type TRegistryEntry = {
   id: string;
   ctor: TCtor,
-}
+};
 
 export const ClassPath = (() => {
   const registry: TRegistryEntry[] = [];
@@ -45,7 +58,7 @@ export const LemonAssign = (() => {
         args: undefined,
         ret: undefined,
         decorators: [],
-      };
+      } satisfies TMethod;
     }
   }
 
@@ -71,7 +84,7 @@ export const LemonAssign = (() => {
       ctor: decorator,
       id: decoratorId,
       props,
-    });
+    } satisfies TDecorator);
   }
 
   function methodDecorator (ctor: TCtor, method: string, decorator: any, props: any) {
@@ -82,7 +95,23 @@ export const LemonAssign = (() => {
       id: decoratorId,
       ctor: decorator,
       props,
-    })
+    } satisfies TDecorator);
+  }
+
+  function ctorArgDecorator (ctor: TCtor, argIndex: number, decorator: TCtor, props: any) {
+    ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS][argIndex].decorators.push({
+      ctor: decorator,
+      props,
+      id: assignDecoratorId(decorator),
+    } satisfies TDecorator);
+  }
+
+  function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, decorator: TCtor, props: any) {
+    ctor.prototype[ClassPathSymbols.METHODS][method].args[argIndex].decorators.push({
+      ctor: decorator,
+      props,
+      id: assignDecoratorId(decorator),
+    } satisfies TDecorator);
   }
 
   return {
@@ -90,6 +119,8 @@ export const LemonAssign = (() => {
     method,
     classDecorator,
     methodDecorator,
+    ctorArgDecorator,
+    methodArgDecorator,
   };
 })();
 
