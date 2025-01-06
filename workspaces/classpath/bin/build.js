@@ -33,7 +33,7 @@ async function run () {
       }
 
       statements.push(`ClassPath.register({ id: "${pkg}.${ctor.getName()}", ctor: ${ctor.getName()} })`);
-      statements.push(`LemonAssign.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
+      statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
 
       for (const p of parameters) {
         const decorators = p.getDecorators();
@@ -55,7 +55,7 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`LemonAssign.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
         }
       }
 
@@ -66,7 +66,7 @@ async function run () {
           (p) => typeToString(pkg, p.getType()),
         );
 
-        statements.push(`LemonAssign.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);
+        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {
@@ -86,7 +86,7 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`LemonAssign.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
         }
 
         const parameters = method.getParameters();
@@ -111,7 +111,7 @@ async function run () {
               props.replaceWithText(propsVarName);
             }
 
-            statements.push(`LemonAssign.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
+            statements.push(`ClassUtils.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
           }
         }
       }
@@ -133,7 +133,7 @@ async function run () {
           props.replaceWithText(propsVarName);
         }
 
-        statements.push(`LemonAssign.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
+        statements.push(`ClassUtils.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
       }
 
       const nextIndex = createIncrementalValue(ctor.getChildIndex());
