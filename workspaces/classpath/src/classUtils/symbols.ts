@@ -3,4 +3,5 @@ export const ClassPathSymbols = {
   METHODS: Symbol("lemon::methods"),
   DECORATORS: Symbol("lemon::decorators"),
   DECORATOR_ID: Symbol("lemon::decorator-id"),
+  CLASS_ID: Symbol("lemon::class-id"),
 };

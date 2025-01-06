@@ -12,6 +12,7 @@ export type TMethod = {
   args: TArgument[];
   ret: TArgument;
   decorators: TDecorator[];
+  name: string;
 };
 
 export type TArgument = {
@@ -20,7 +21,28 @@ export type TArgument = {
   decorators: TDecorator[];
 };
 
-export type TRegistryEntry = {
+export type TClassInfo = {
   id: string;
   ctor: TCtor,
+};
+
+export type TDecoratorHandler = {
+  getCtor: () => TDecoratorCtor;
+  getProps: () => any;
+};
+
+export type TArgHandler = {
+  getDecorators: (decorator: TDecoratorCtor) => TDecoratorHandler[],
+  getTypeId: () => string;
+  getIsAsync: () => boolean;
+}
+
+export type TMethodHandler = {
+  getDecorators: (decorator: TDecoratorCtor) => TDecoratorHandler[],
+  getReturnType: () => {
+    getTypeId: () => string;
+    getIsAsync: () => boolean;
+  },
+  getName: () => string;
+  getArguments: () => TArgHandler[];
 };

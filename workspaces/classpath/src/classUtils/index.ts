@@ -1,6 +1,15 @@
 import {ClassPathSymbols} from "./symbols";
 import {assignDecoratorId} from "./utils";
-import {TArgument, TCtor, TDecorator, TDecoratorCtor, TMethod} from "../types";
+import {
+  TArgHandler,
+  TArgument,
+  TCtor,
+  TDecorator,
+  TDecoratorCtor,
+  TDecoratorHandler,
+  TMethod,
+  TMethodHandler
+} from "../types";
 
 function createMethod (ctor: TCtor, method: string) {
   if (!ctor.prototype[ClassPathSymbols.METHODS]) {
@@ -12,12 +21,17 @@ function createMethod (ctor: TCtor, method: string) {
       args: undefined,
       ret: undefined,
       decorators: [],
+      name: method,
     } satisfies TMethod;
   }
 }
 
 function ctorArgs (ctor: TCtor, args: TArgument[]) {
   ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args;
+}
+
+function assignClassId (ctor: TCtor, id: string) {
+  ctor.prototype[ClassPathSymbols.CLASS_ID] = id;
 }
 
 function method(ctor: TCtor, method: string, args: TArgument[], ret: TArgument) {
@@ -68,58 +82,60 @@ function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, deco
   } satisfies TDecorator);
 }
 
-function getDecoratorHandler (decorator: TDecorator) {
+function getDecoratorHandler (decorator: TDecorator): TDecoratorHandler {
   return {
     getCtor: () => decorator.ctor,
     getProps: () => decorator.props,
   }
 }
 
-function getArgHandler (arg: TArgument) {
+function getArgHandler (arg: TArgument): TArgHandler {
   return {
-    getDecorators: () => arg.decorators.map(getDecoratorHandler),
+    getDecorators: (decorator: TDecoratorCtor) => arg.decorators
+      .filter(d => d.ctor === decorator)
+      .map(getDecoratorHandler),
     getTypeId: () => arg.typeId,
     getIsAsync: () => arg.isAsync,
   }
 }
 
-function getMethodHandler (method: TMethod) {
+function getMethodHandler (method: TMethod): TMethodHandler {
   return {
-    getDecorators: () => method.decorators.map(getDecoratorHandler),
+    getDecorators: (decorator: TDecoratorCtor) => method.decorators
+      .filter(d => d.ctor === decorator)
+      .map(getDecoratorHandler),
     getReturnType: () => ({
       getTypeId: () => method.ret.typeId,
       getIsAsync: () => method.ret.isAsync,
     }),
+    getName: () => method.name,
     getArguments: () => method.args.map(getArgHandler),
   };
 }
 
-function getClassHandler (ctor: TCtor) {
-  const getDecorators = (decorator: TDecoratorCtor): ReturnType<typeof getDecoratorHandler>[] => {
-    const decorators = ctor.prototype[ClassPathSymbols.DECORATORS] as TDecorator[];
-    if (decorators) {
-      return decorators
-        .filter((d) => d.ctor === decorator)
-        .map(getDecoratorHandler)
-        ;
-    }
+function getDecorators (ctor: TCtor, decorator: TDecoratorCtor): TDecoratorHandler[] {
+  const decorators = ctor.prototype[ClassPathSymbols.DECORATORS] as TDecorator[];
+  if (decorators) {
+    return decorators
+      .filter((d) => d.ctor === decorator)
+      .map(getDecoratorHandler);
+  }
 
-    return []
-  };
+  return [];
+}
 
-  const getMethods = () =>
-    Object.keys(ctor.prototype[ClassPathSymbols.METHODS])
-      .map((m) =>
-        getMethodHandler(ctor.prototype[ClassPathSymbols.METHODS][m]));
+function getMethods (ctor: TCtor): TMethodHandler[] {
+  return Object.keys(ctor.prototype[ClassPathSymbols.METHODS])
+    .map((m) =>
+      getMethodHandler(ctor.prototype[ClassPathSymbols.METHODS][m]));
+}
 
-  const getConstructorArgs = () =>
-    ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS].map(getArgHandler);
+function getConstructorArgs (ctor: TCtor): TArgHandler[] {
+  return ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS].map(getArgHandler);
+}
 
-  return {
-    getDecorators,
-    getMethods,
-    getConstructorArgs,
-  };
+function getClassId (ctor: TCtor): string {
+  return ctor.prototype[ClassPathSymbols.CLASS_ID];
 }
 
 export const ClassUtils = {
@@ -129,8 +145,12 @@ export const ClassUtils = {
   methodDecorator,
   ctorArgDecorator,
   methodArgDecorator,
+  assignClassId,
 
-  getClassHandler,
+  getDecorators,
+  getMethods,
+  getConstructorArgs,
+  getClassId,
 };
 
 global.ClassUtils = ClassUtils;

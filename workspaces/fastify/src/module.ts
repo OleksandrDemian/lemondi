@@ -1,16 +1,16 @@
-import {Component, Factory, Instantiate, instantiate, OnInit} from "@lemondi/core";
+import {Component, instantiate, OnInit} from "@lemondi/core";
 import Fastify, {FastifyInstance, HTTPMethods} from 'fastify';
 import { Router } from "./decorators/router";
-import {findClassDecorators, findMethodDecorators, getDecoratorId, scan, TCtor} from "@lemondi/scanner";
 import { Delete, Get, Options, Post, Put, TRouteProps } from "./decorators/methods";
 import {FastifyInitConfig, FastifyListenConfig} from "./configurations";
+import {ClassPath, ClassUtils, TMethodHandler} from "@lemondi/classpath";
 
 const DecoratorsToHttpMethodMap: Record<symbol, HTTPMethods> = {
-  [getDecoratorId(Get)]: "GET",
-  [getDecoratorId(Post)]: "POST",
-  [getDecoratorId(Put)]: "PUT",
-  [getDecoratorId(Delete)]: "DELETE",
-  [getDecoratorId(Options)]: "OPTIONS",
+  [Get.name]: "GET",
+  [Post.name]: "POST",
+  [Put.name]: "PUT",
+  [Delete.name]: "DELETE",
+  [Options.name]: "OPTIONS",
 }
 
 const RouteDecorators = [
@@ -32,13 +32,13 @@ export class FastifyModule {
     this.fastify = Fastify(this.instanceConfig.getConfig());
   }
 
-  private getRouteProps (ctor: TCtor, propName: string | symbol): TRouteProps & { method: HTTPMethods } | undefined {
+  private getRouteProps (method: TMethodHandler): TRouteProps & { method: HTTPMethods } | undefined {
     for (const d of RouteDecorators) {
-      const [decorator] = findMethodDecorators(ctor, propName, d);
+      const [decorator] = method.getDecorators(d);
       if (decorator) {
         return {
-          ...decorator.decoratorProps,
-          method: DecoratorsToHttpMethodMap[decorator.decoratorId]
+          ...decorator.getProps(),
+          method: DecoratorsToHttpMethodMap[d.name]
         };
       }
     }
@@ -47,28 +47,31 @@ export class FastifyModule {
   }
 
   private async buildRoutes () {
-    const routers = scan(Router);
+    const cls = ClassPath.getClasses();
 
-    for (const router of routers) {
-      const routerInstance = await instantiate(router);
-      const [routerDecorator] = findClassDecorators(router, Router);
-      console.log(`[${router.name}]`);
+    for (const c of cls) {
+      const [routerDecorator] = ClassUtils.getDecorators(c, Router);
+      if (routerDecorator) {
+        const routerInstance = await instantiate(c);
+        console.log(`[${c.name}]`);
 
-      for (const prop of Reflect.ownKeys(router.prototype)) {
-        const routerProps = this.getRouteProps(router, prop);
-        if (routerProps) {
-          const url = routerProps.isAbsolute ? routerProps.path : routerDecorator.decoratorProps?.path || '' + routerProps?.path;
-          if (url) {
-            this.fastify.route({
-              method: routerProps.method,
-              handler: async (...args) => {
-                return await Promise.resolve(routerInstance[prop].call(routerInstance, ...args));
-              },
-              url,
-            });
+        const methods = ClassUtils.getMethods(c);
+        for (const method of methods) {
+          const routerProps = this.getRouteProps(method);
+          if (routerProps) {
+            const url = routerProps.isAbsolute ? routerProps.path : routerDecorator.getProps()?.path || '' + routerProps?.path;
+            if (url) {
+              this.fastify.route({
+                method: routerProps.method,
+                handler: async (...args) => {
+                  return await Promise.resolve(routerInstance[method.getName()].call(routerInstance, ...args));
+                },
+                url,
+              });
+            }
+
+            console.log("  - " + routerProps.method + " " + url);
           }
-
-          console.log("  - " + routerProps.method + " " + url);
         }
       }
     }

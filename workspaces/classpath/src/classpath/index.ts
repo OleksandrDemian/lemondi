@@ -1,19 +1,26 @@
-import {TRegistryEntry} from "../types";
+import {TClassInfo, TCtor} from "../types";
+import {ClassUtils} from "../classUtils";
 
 export const ClassPath = (() => {
-  const registry: TRegistryEntry[] = [];
+  const registry: Record<string, TCtor> = {};
 
-  function register(entry: TRegistryEntry) {
-    registry.push(entry);
+  function register(entry: TClassInfo) {
+    ClassUtils.assignClassId(entry.ctor, entry.id);
+    registry[entry.id] = entry.ctor;
   }
 
   function getClasses() {
-    return registry;
+    return Object.values(registry);
+  }
+
+  function getClassById (id: string): TCtor | undefined {
+    return registry[id];
   }
 
   return {
     register,
     getClasses,
+    getClassById,
   }
 })();
 
