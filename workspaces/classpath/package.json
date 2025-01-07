@@ -1,22 +1,25 @@
 {
-  "name": "@lemondi/scanner",
-  "version": "0.0.0-alpha.4",
+  "name": "@lemondi/classpath",
+  "version": "0.0.0-alpha.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
     "build": "rimraf ./dist && tsc"
   },
+  "bin": {
+    "lemondi": "bin/build.js"
+  },
   "files": [
     "/dist"
   ],
   "dependencies": {
-    "reflect-metadata": "^0.2.2",
     "rimraf": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "ts-morph": "^25.0.0"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,9 @@
-import {createClassDecorator, createMethodDecorator, TCtor} from "@lemondi/scanner";
+export function Factory(): ClassDecorator {
+  return () => {}
+}
 
-export const Instantiate = createMethodDecorator<{
-  qualifiers: (TCtor | symbol | string)[];
-}>("Instantiate");
-export const Factory = createClassDecorator("Factory");
+export function Instantiate(props?: {
+  qualifiers: (symbol | string)[];
+}): MethodDecorator {
+  return () => {};
+}

@@ -1,50 +1,46 @@
-# :lemon: LemonDI
+# :lemon: LemonDI Core module
 
-**LemonDI** is a decorator-based Dependency Injection (DI) 💉 framework for TypeScript. By leveraging decorators, it simplifies the setup and management of application components, allowing developers to easily create and manage complex applications.
+LemonDI Core module (`@lemondi/core`) allows you to create components (`@Component`) and factories (`@Factory`) to automatically handle dependency injection.
 
-The framework consists of the following modules:
+## :construction: Work in progress
 
-- **`@lemondi/core`**: The core DI system that provides essential functionality for managing components, their lifecycle, and events.
-- **`@lemondi/scanner`**: A utility that scans and manages class and method decorators, helping you organize and manage your decorators effectively.
+This project is in a very early stage
 
-## :page_with_curl: Table of Contents
+## Who needs yet another dependency injection framework?
 
-- [Installation](#inbox_tray-installation)
-- [Modules](#blue_book-modules)
-  - [Core Module](#syringe-core-module)
-  - [Scanner Module](#mag-scanner-module)
-- [Example](#pencil2-example-app-basics)
-- [Caveats](#warning-caveats)
+There are a lot of great typescript DI frameworks out there (`NestJS`, `InversifyJS`, `TypeDI`, `TSyringe`), they are all great but they all have 1 huge disadvantage: by default the injection only works for classes.
+If you have a component that is not a class (ex: type or interface) than you have to manually work with injection tokens, which is ok, but not great.
+This is because they all relly on `reflect-metadata` library, which only emits types for classes, otherwise it fallbacks to Object.
+The goal of LemonDI (more specifically `@lemondi/classpath`) is to provide more metadata when building the project to have better DI framework without having to relly on manual injection tokens.
+Moreover, long-term it will be possible to inject components automatically based on extended classes or implemented interfaces.
 
-## :inbox_tray: Installation
+## Examples
 
-You can install the full **@lemondi** suite as a monorepo or install individual modules. For example:
+IMPORTANT: in order for the injection system to work you have to build the app using `@lemondi/classpath`:
+
+Installation:
 
 ```bash
-# To install all modules
-npm install @lemondi/core @lemondi/scanner
+npm install @lemondi/core @lemondi/classpath
 ```
 
-## :blue_book: Modules
+Package json build command:
 
-### :syringe: Core Module
+```json
+{
+  "name": "example-app",
+  "version": "0.0.0",
+  "scripts": {
+    "build:lemon": "lemondi"
+  },
+  "dependencies": {
+    "@lemondi/core": "0.0.0-alpha.6",
+    "@lemondi/classpath": "0.0.0-alpha.6"
+  }
+}
+```
 
-The **`@lemondi/core`** module is the backbone of the LemonDI framework, providing all the essential infrastructure for dependency injection. It enables you to define components, manage event listeners, and automatically instantiate services. You can seamlessly integrate with external libraries, build and manage components, and configure app lifecycle events.
-
-- **Key Features**:
-  - Component management using decorators.
-  - Seamless integration with external libraries through factory functions.
-  - A powerful DI core system that simplifies complex applications.
-
-### :mag: Scanner Module
-
-The **`@lemondi/scanner`** module is responsible for scanning and managing decorators in your application. It provides utilities for discovering and managing class and method decorators, which are essential in DI frameworks. This module helps in applying decorators to classes and methods dynamically, improving modularity and flexibility.
-
-## :pencil2: Example App: Basics
-
-### **Configure TypeScript**
-
-To ensure decorators work properly, you need to enable `experimentalDecorators` and `emitDecoratorMetadata` in your TypeScript configuration:
+tsconfig.json
 
 ```json
 {
@@ -52,23 +48,88 @@ To ensure decorators work properly, you need to enable `experimentalDecorators` 
     "module": "commonjs",
     "target": "es2015",
     "outDir": "./dist",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "experimentalDecorators": true
   }
 }
 ```
 
-### **NPM Packages**
+### Create basic app
 
-In this example, we'll build a simple app that interacts with an in-memory SQLite database. First, install the necessary dependencies:
+```typescript
+import {Component, OnInit, start} from "@lemondi/core";
 
-```bash
-npm install @lemondi/core sequelize sqlite3 tsc typescript
+@Component()
+class Main {
+  constructor() {
+    console.log("Class instantiated");
+  }
+
+  @OnInit()
+  onStart() {
+    console.log("App started");
+  }
+}
+
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [Main],
+});
 ```
 
-### **App Code**
+### Inject class
 
-In this example, we'll use one external library (`sequelize`) shared across multiple services. Since `Sequelize` can't be directly decorated with `@Component`, we'll use `@Factory` to instantiate it.
+```typescript
+import {Component, OnInit, start} from "@lemondi/core";
+
+@Component()
+class Config {
+  messageA = "Hello A!";
+  messageB = "Hello B!";
+}
+
+@Component()
+class ServiceA {
+  constructor(
+    private config: Config,
+  ) { }
+
+  start() {
+    console.log(this.config.messageA);
+  }
+}
+
+@Component()
+class ServiceB {
+  constructor(
+    private config: Config,
+  ) { }
+
+  start() {
+    console.log(this.config.messageB);
+  }
+}
+
+@Component()
+class Main {
+  constructor(
+    private a: ServiceA,
+    private b: ServiceB,
+  ) { }
+
+  @OnInit()
+  onStart() { // on init can be async
+    this.a.start();
+    this.b.start();
+  }
+}
+
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [Main],
+});
+```
+
+### Use Factory to instantiate external library
 
 ```typescript
 import { Component, Factory, Instantiate, OnInit, start } from "@lemondi/core";
@@ -77,10 +138,8 @@ import { Sequelize } from "sequelize";
 @Factory()
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
-  @Instantiate({
-    qualifiers: [Sequelize]
-  })
-  createSequelizeInstance() { 
+  @Instantiate() // this will automatically inherit instance type
+  createSequelizeInstance() { // explicit return type is required, only classes can be used as factory types
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }
@@ -146,85 +205,3 @@ start({
   modules: [App],  // The entry point; classes listed here will be instantiated automatically
 });
 ```
-
-Once the app is ready, you can build it with the TypeScript compiler (TSC) and run it using Node.js. Assuming the code is in `src/app.ts`, let's add the following command to the `package.json`:
-```json
-{
-  // ...
-  "scripts": {
-    // ...
-    "start": "tsc && node ./dist/app.js"
-  },
-  // ...
-}
-```
-
-This command will build and run the application. You can run it using your package manager of choice, for example (I will use NPM as it is the most popular):
-```bash
-npm run start
-```
-
-## :warning: Caveats
-
-### :no_entry_sign: Types and Interfaces Are Not Supported
-
-Currently, the implementation relies on TypeScript and `reflect-metadata`, which means type information is erased during the build process. As a result, it isn't possible to retain `type` or `interface` data in the runtime.
-
-However, there's a plan to eventually remove the `reflect-metadata` library and transition to a custom build system that extracts the necessary information before building the app. This change will provide better support for DI in LemonDI.
-
-In the meantime, you can work around this limitation by wrapping types and interfaces in classes. For instance, to inject a Fastify configuration object (which is an interface), you can create a wrapper class:
-
-```typescript
-import Fastify, { FastifyInstance, FastifyListenOptions } from "fastify";
-import { Component } from "@lemondi/core";
-
-@Component()
-export class FastifyListenConfig {
-  config: FastifyListenOptions;
-
-  constructor() {
-    this.config = {
-      port: process.env.PORT, // or inject environment configuration in constructor
-    };
-  }
-
-  get() {
-    return this.config;
-  }
-}
-
-@Component()
-export class FastifyService {
-  server: FastifyInstance;
-
-  constructor(
-    private config: FastifyListenConfig,
-  ) {
-    this.server = Fastify();
-  }
-
-  start() {
-    this.server.listen(this.config.get());
-  }
-}
-
-@Component()
-class App {
-  constructor(
-    private fastifyService: FastifyService,
-  ) { }
-
-  @OnInit()
-  async onStart() {
-    this.fastifyService.start();
-  }
-}
-
-// Bootstrap application
-start({
-  importFiles: [], // No additional files are needed for this example
-  modules: [App],   // The entry point for instantiating classes
-});
-```
-
-Otherwise you can use qualifiers as seen in the [App code example](#app-code) (see Sequelize).

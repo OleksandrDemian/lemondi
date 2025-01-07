@@ -1,12 +1,9 @@
-import {
-  createClassDecorator,
-  createMethodDecorator, TCtor,
-} from "@lemondi/scanner";
+export function Component (props?: {
+  qualifiers: (symbol | string)[];
+}): ClassDecorator {
+  return () => {};
+}
 
-export const Component = createClassDecorator<{
-  qualifiers: (TCtor | symbol | string)[];
-}>("Component");
-export const OnAppEvent = createMethodDecorator<{
-  subscribe: string[],
-}>("OnAppEvent");
-export const OnInit = createMethodDecorator("OnInit");
+export function OnInit (): MethodDecorator {
+  return () => {};
+}

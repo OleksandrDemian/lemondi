@@ -1,4 +1,4 @@
-import {TCtor} from "@lemondi/scanner";
+import {TCtor} from "@lemondi/classpath";
 
 const QualifiedSymbol = Symbol("Qualified");
 

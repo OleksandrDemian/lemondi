@@ -1,5 +1,4 @@
-import {getClassId} from "@lemondi/scanner";
-import {getMethodParamQualifier} from "../helpers/qualifier";
+import {ClassUtils, TArgHandler} from "@lemondi/classpath";
 
 export type TComponentProto = {
   getValue: () => any;
@@ -21,19 +20,20 @@ export const addComponentProto = (qualifiers: (symbol | string)[], proto: TCompo
   });
 };
 
-export const getDependencies = async (ctor: any, prop?: any): Promise<any[]> => {
-  const paramTypes = Reflect.getMetadata("design:paramtypes", ctor, prop) || [];
-  const components = paramTypes.map((type: any, i: number) => {
+export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
+  const components = args.map((type) => {
     // You can extend this logic to resolve the dependency
-    const qualifier = getMethodParamQualifier(ctor, prop, i);
-    return getComponent(type, qualifier);
+    return getComponent(type.getTypeId());
   });
 
   return Promise.all(components);
 };
 
-export const getComponent = async <T> (base: new (...args: any) => T, qualifier?: symbol | string): Promise<T> => {
-  const classId = getClassId(base);
+export const getComponent = async <T> (classId: string | symbol, qualifier?: symbol | string): Promise<T> => {
+  if (classId === "unsupported") {
+    throw new Error(`Cannot inject "unsupported" type. Please check build logs to determine where unsupported id was generated`);
+  }
+
   const query: TDiComponent[] = diComponents.filter((component) => {
     if (!classId || component.qualifiers.includes(classId)) {
       if (qualifier) {
@@ -47,9 +47,9 @@ export const getComponent = async <T> (base: new (...args: any) => T, qualifier?
   });
 
   if (query.length > 1) {
-    throw new Error("Multiple components found for " + base.name + (qualifier ? " and " + qualifier.toString() : ""));
+    throw new Error("Multiple components found for " + classId.toString() + (qualifier ? " and " + qualifier.toString() : ""));
   } else if (query.length < 1) {
-    throw new Error("No components found for " + base.name + (qualifier ? " and " + qualifier.toString() : ""));
+    throw new Error("No components found for " + classId.toString() + (qualifier ? " and " + qualifier.toString() : ""));
   }
 
   const proto = query[0].proto;
@@ -62,5 +62,9 @@ export const getComponent = async <T> (base: new (...args: any) => T, qualifier?
 };
 
 export const instantiate = async <T>(ctor: new (...args: any) => T) => {
-  return Reflect.construct(ctor, await getDependencies(ctor));
+  return Reflect.construct(
+    ctor,
+    await getDependencies(
+      ClassUtils.getConstructorArgs(ctor),
+    ));
 };
