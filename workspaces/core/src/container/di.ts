@@ -30,6 +30,10 @@ export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
 };
 
 export const getComponent = async <T> (classId: string | symbol, qualifier?: symbol | string): Promise<T> => {
+  if (classId === "unsupported") {
+    throw new Error(`Cannot inject "unsupported" type. Please check build logs to determine where unsupported id was generated`);
+  }
+
   const query: TDiComponent[] = diComponents.filter((component) => {
     if (!classId || component.qualifiers.includes(classId)) {
       if (qualifier) {

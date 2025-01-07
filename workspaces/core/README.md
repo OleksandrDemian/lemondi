@@ -1,8 +1,57 @@
-# :lemon: LemonDI Scanner module
+# :lemon: LemonDI Core module
 
 LemonDI Core module (`@lemondi/core`) allows you to create components (`@Component`) and factories (`@Factory`) to automatically handle dependency injection.
 
-## How to
+## :construction: Work in progress
+
+This project is in a very early stage
+
+## Who needs yet another dependency injection framework?
+
+There are a lot of great typescript DI frameworks out there (`NestJS`, `InversifyJS`, `TypeDI`, `TSyringe`), they are all great but they all have 1 huge disadvantage: by default the injection only works for classes.
+If you have a component that is not a class (ex: type or interface) than you have to manually work with injection tokens, which is ok, but not great.
+This is because they all relly on `reflect-metadata` library, which only emits types for classes, otherwise it fallbacks to Object.
+The goal of LemonDI (more specifically `@lemondi/classpath`) is to provide more metadata when building the project to have better DI framework without having to relly on manual injection tokens.
+Moreover, long-term it will be possible to inject components automatically based on extended classes or implemented interfaces. 
+
+## Examples
+
+IMPORTANT: in order for the injection system to work you have to build the app using `@lemondi/classpath`:
+
+Installation:
+
+```bash
+npm install @lemondi/core @lemondi/classpath
+```
+
+Package json build command:
+
+```json
+{
+  "name": "example-app",
+  "version": "0.0.0",
+  "scripts": {
+    "build:lemon": "lemondi"
+  },
+  "dependencies": {
+    "@lemondi/core": "0.0.0-alpha.5",
+    "@lemondi/classpath": "0.0.0-alpha.5"
+  }
+}
+```
+
+tsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2015",
+    "outDir": "./dist",
+    "experimentalDecorators": true
+  }
+}
+```
 
 ### Create basic app
 
@@ -68,7 +117,7 @@ class Main {
   ) { }
 
   @OnInit()
-  onStart() {
+  onStart() { // on init can be async
     this.a.start();
     this.b.start();
   }
@@ -89,9 +138,7 @@ import { Sequelize } from "sequelize";
 @Factory()
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
-  @Instantiate({
-    qualifiers: [Sequelize]
-  })
+  @Instantiate() // this will automatically inherit instance type
   createSequelizeInstance() { // explicit return type is required, only classes can be used as factory types
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");

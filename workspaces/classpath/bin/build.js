@@ -3,9 +3,9 @@
 const { Project } = require("ts-morph");
 const {
   createIncrementalValue,
-  generatePackage,
+  getFilePath,
   stringifyArgsType,
-  getDependencies,
+  getDependencies, pathToPackage,
 } = require("./utils");
 const fs = require("fs");
 const {TypeIdResolver} = require("./typeIdResolver");
@@ -20,6 +20,7 @@ async function run () {
 
   const packageJson = JSON.parse(fs.readFileSync("package.json", "utf-8"));
   TypeIdResolver.setDeps(getDependencies(packageJson));
+  TypeIdResolver.setPkgName(packageJson.name);
   TypeIdResolver.setProjectRoot(process.cwd());
 
   // add source files
@@ -29,7 +30,8 @@ async function run () {
 
     for (const ctor of classes) {
       const statements = [];
-      const pkg = generatePackage(file.getFilePath());
+      const pkg = pathToPackage(getFilePath(file.getFilePath()));
+      TypeIdResolver.setCurrentClass(ctor.getName());
 
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
       const constructorTypes = [];

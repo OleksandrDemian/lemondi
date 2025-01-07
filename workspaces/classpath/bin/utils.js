@@ -1,8 +1,23 @@
 const path = require("path");
 
-function generatePackage (filePath) {
+const PRIMITIVE_TYPES = [
+  "string",
+  "number",
+  "bigint",
+  "boolean",
+  "undefined",
+  "symbol",
+  "null",
+];
+
+function getFilePath (filePath) {
   const parsed = path.parse(filePath);
   return path.relative(process.cwd(), parsed.dir + '/' + parsed.name).replace(/\\/g, '/');
+}
+
+function pathToPackage (path) {
+  // Get the platform-specific separator
+  return path.replace(/[\\\/]/g, '#');
 }
 
 /**
@@ -86,12 +101,22 @@ function getDependencies (pkgJson) {
   return collection;
 }
 
+/**
+ * @param {string} type
+ * @returns {boolean}
+ */
+function isPrimitiveType (type) {
+  return PRIMITIVE_TYPES.includes(type);
+}
+
 module.exports = {
-  generatePackage,
+  getFilePath,
   stringifyArgsType,
   createIncrementalValue,
   removePromiseAnnotation,
   removeGenericImports,
   parseImportType,
   getDependencies,
+  pathToPackage,
+  isPrimitiveType,
 }

@@ -1,14 +1,19 @@
+/**
+ * TODO: refactor this shit
+ */
 const { Type } = require("ts-morph");
 const {
   removePromiseAnnotation,
-  generatePackage,
+  getFilePath,
   parseImportType,
-  removeGenericImports,
+  removeGenericImports, pathToPackage, isPrimitiveType,
 } = require("./utils");
 
 const TypeIdResolver = (() => {
   let deps = [];
   let projectRoot = "";
+  let pkgName = "";
+  let currentClass = "";
 
   function setDeps (newDeps) {
     deps = newDeps;
@@ -18,6 +23,14 @@ const TypeIdResolver = (() => {
     projectRoot = newProjectRoot;
   }
 
+  function setPkgName (newPkgName) {
+    pkgName = newPkgName;
+  }
+
+  function setCurrentClass (newCurrentClass) {
+    // todo: this will definitely cause issue, find a better way
+    currentClass = newCurrentClass;
+  }
   /**
    * @param {string} path
    * @returns {string | undefined}
@@ -39,6 +52,7 @@ const TypeIdResolver = (() => {
    */
   function typeToString (currentFile, type) {
     if (type.isUnionOrIntersection()) {
+      console.warn(`Failed to create id for ${type.getText()}. The provided type is intersection or union`);
       return {
         typeId: "unsupported",
         isAsync: false,
@@ -57,7 +71,7 @@ const TypeIdResolver = (() => {
           const ext = getExternalImport(typeString);
           const { importPath, importType } = parseImportType(typeString);
           return {
-            typeId: `${ext ? ext : generatePackage(importPath)}#${importType}`,
+            typeId: `${ext ? ext : pathToPackage(getFilePath(importPath))}#${importType}`,
             isAsync,
           };
         }
@@ -70,9 +84,25 @@ const TypeIdResolver = (() => {
           };
         }
 
+        const isThis = typeString === "this";
+        if (isThis) {
+          // self reference
+          return {
+            typeId: `${pkgName}#${pathToPackage(getFilePath(currentFile))}#${currentClass}`,
+            isAsync,
+          };
+        }
+
+        if (isPrimitiveType(typeString)) {
+          return {
+            typeId: typeString,
+            isAsync,
+          };
+        }
+
         // is locally declared
         return {
-          typeId: currentFile + "#" + typeString,
+          typeId: `${pkgName}#${pathToPackage(getFilePath(currentFile))}#${typeString}`,
           isAsync,
         };
       } else {
@@ -88,6 +118,8 @@ const TypeIdResolver = (() => {
     setDeps,
     typeToString,
     setProjectRoot,
+    setPkgName,
+    setCurrentClass,
   }
 })();
 
