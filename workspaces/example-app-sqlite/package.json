@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lemondi/core": "^0.0.0-alpha.5",
-    "@lemondi/classpath": "^0.0.0-alpha.5",
+    "@lemondi/core": "^0.0.0-alpha.6",
+    "@lemondi/classpath": "^0.0.0-alpha.6",
     "class-transformer": "^0.5.1",
     "reflect-metadata": "^0.2.2",
     "sqlite3": "^5.1.7",
