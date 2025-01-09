@@ -20,14 +20,20 @@ const RouteDecorators = [
   Options,
 ];
 
+export type ModuleConfig = {
+  enabled: boolean;
+};
+
 @Component()
 export class FastifyModule {
   fastify: FastifyInstance;
 
   constructor (
+    private config: ModuleConfig,
     private instanceConfig: FastifyHttpOptions<any>,
     private listenConfig: FastifyListenOptions,
   ) {
+    console.log(config);
     this.fastify = Fastify(this.instanceConfig);
   }
 

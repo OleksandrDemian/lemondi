@@ -47,6 +47,24 @@
     wrap-ansi "^8.1.0"
     wrap-ansi-cjs "npm:wrap-ansi@^7.0.0"
 
+"@lemondi/classpath@0.0.0-alpha.8", "@lemondi/classpath@^0.0.0-alpha.8":
+  version "0.0.0-alpha.8"
+  resolved "https://registry.yarnpkg.com/@lemondi/classpath/-/classpath-0.0.0-alpha.8.tgz#a7b18326fa1bc509b49314718ee34c8c1b17ff3f"
+  integrity sha512-7CxWrhoKt+8BdKuYY0+7NOII+FE+K7FjSDZ+IOhccE3cU4+cwSOl++DiT4L0W4R88qcZQQPKJ4F7ggqNElt3pQ==
+  dependencies:
+    rimraf "^6.0.1"
+    ts-morph "^25.0.0"
+
+"@lemondi/core@0.0.0-alpha.8", "@lemondi/core@^0.0.0-alpha.8":
+  version "0.0.0-alpha.8"
+  resolved "https://registry.yarnpkg.com/@lemondi/core/-/core-0.0.0-alpha.8.tgz#6b69b89e65563ee663ddfc0ab2f24cd978e2d2bf"
+  integrity sha512-QvpAJT3aweQxOyDAVu8sjRy3m5U3quUajH0YBfRgwfTMfejZ8wxJala8iMd8Gnb1OWpAunjiiPVP33s9eDTYBw==
+  dependencies:
+    "@lemondi/classpath" "0.0.0-alpha.8"
+    fast-glob "^3.3.2"
+    reflect-metadata "^0.2.2"
+    rimraf "^6.0.1"
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"

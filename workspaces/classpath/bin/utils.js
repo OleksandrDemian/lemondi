@@ -10,23 +10,23 @@ const PRIMITIVE_TYPES = [
   "null",
 ];
 
-function getFilePath (filePath) {
+function getInProjectFilePath (filePath) {
   const parsed = path.parse(filePath);
   return path.relative(process.cwd(), parsed.dir + '/' + parsed.name).replace(/\\/g, '/');
 }
 
-function pathToPackage (path) {
+function tokenizePath (path) {
   // Get the platform-specific separator
   return path.replace(/[\\\/]/g, '#');
 }
 
 /**
  *
- * @param {TParsedImport[]} args
+ * @param {TInjectionToken[]} args
  * @returns {string}
  */
 function stringifyArgsType (args) {
-  return `[${args.map(t => `{ typeId: "${t.typeId}", isAsync: ${t.isAsync}`).join(", ")}]`;
+  return `[${args.map(t => `{ typeId: "${t.token}", isAsync: ${t.isAsync}`).join(", ")}]`;
 }
 
 function createIncrementalValue (start) {
@@ -110,13 +110,13 @@ function isPrimitiveType (type) {
 }
 
 module.exports = {
-  getFilePath,
+  getInProjectFilePath,
   stringifyArgsType,
   createIncrementalValue,
   removePromiseAnnotation,
   removeGenericImports,
   parseImportType,
   getDependencies,
-  pathToPackage,
+  tokenizePath,
   isPrimitiveType,
 }

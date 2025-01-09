@@ -3,9 +3,8 @@
 const { Project } = require("ts-morph");
 const {
   createIncrementalValue,
-  getFilePath,
   stringifyArgsType,
-  getDependencies, pathToPackage,
+  getDependencies,
 } = require("./utils");
 const fs = require("fs");
 const {TypeIdResolver} = require("./typeIdResolver");
@@ -30,16 +29,18 @@ async function run () {
 
     for (const ctor of classes) {
       const statements = [];
-      const pkg = pathToPackage(getFilePath(file.getFilePath()));
-      TypeIdResolver.setCurrentClass(ctor.getName());
+      const resolver = TypeIdResolver.createInjectionTokenResolver(file, ctor);
 
+      /**
+       * @type {ParameterDeclaration[]}
+       */
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
       const constructorTypes = [];
       for (const p of parameters) {
-        constructorTypes.push(TypeIdResolver.typeToString(file.getFilePath(), p.getType()));
+        constructorTypes.push(resolver.getInjectionToken(p.getType()));
       }
 
-      statements.push(`ClassPath.register({ id: "${pkg}#${ctor.getName()}", ctor: ${ctor.getName()} })`);
+      statements.push(`ClassPath.register({ id: "${resolver.getInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
       statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
 
       for (const p of parameters) {
@@ -68,12 +69,10 @@ async function run () {
 
       const methods = ctor.getMethods();
       for (const method of methods) {
-        const ret = TypeIdResolver.typeToString(file.getFilePath(), method.getReturnType());
-        const args = method.getParameters().map(
-          (p) => TypeIdResolver.typeToString(file.getFilePath(), p.getType()),
-        );
+        const args = resolver.getMethodArgumentsInjectionTokens(method);
+        const ret = resolver.getMethodReturnInjectionToken(method);
 
-        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);
+        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.token}", isAsync: ${ret.isAsync} };`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {

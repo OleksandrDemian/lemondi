@@ -23,6 +23,10 @@ export const addComponentProto = (qualifiers: (symbol | string)[], proto: TCompo
 export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
   const components = args.map((type) => {
     // You can extend this logic to resolve the dependency
+    if (type.getTypeId() === "") {
+      return undefined;
+    }
+
     return getComponent(type.getTypeId());
   });
 
