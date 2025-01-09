@@ -30,19 +30,15 @@ async function run () {
     for (const ctor of classes) {
       const statements = [];
       const resolver = TypeIdResolver.createInjectionTokenResolver(file, ctor);
+      const constructorTypes = resolver.getConstructorInjectionTokens(ctor);
+
+      statements.push(`ClassPath.register({ id: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
+      statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
 
       /**
        * @type {ParameterDeclaration[]}
        */
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
-      const constructorTypes = [];
-      for (const p of parameters) {
-        constructorTypes.push(resolver.getInjectionToken(p.getType()));
-      }
-
-      statements.push(`ClassPath.register({ id: "${resolver.getInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
-      statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
-
       for (const p of parameters) {
         const decorators = p.getDecorators();
         for (let i = 0; i < decorators.length; i++) {
