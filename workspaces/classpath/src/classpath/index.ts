@@ -5,8 +5,8 @@ export const ClassPath = (() => {
   const registry: Record<string, TCtor> = {};
 
   function register(entry: TClassInfo) {
-    ClassUtils.assignClassId(entry.ctor, entry.id);
-    registry[entry.id] = entry.ctor;
+    ClassUtils.assignClassId(entry.ctor, entry.typeId);
+    registry[entry.typeId] = entry.ctor;
   }
 
   function getClasses() {

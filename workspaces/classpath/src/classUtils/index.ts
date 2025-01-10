@@ -82,6 +82,14 @@ function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, deco
   } satisfies TDecorator);
 }
 
+function ext (ctor: TCtor, interfaces: { typeId: string }[]) {
+  ctor.prototype[ClassPathSymbols.INTERFACES] = interfaces.map((i) => i.typeId);
+}
+
+function interfaces (ctor: TCtor, extTypeId: string) {
+  ctor.prototype[ClassPathSymbols.EXTENDS] = extTypeId;
+}
+
 function getDecoratorHandler (decorator: TDecorator): TDecoratorHandler {
   return {
     getCtor: () => decorator.ctor,
@@ -134,8 +142,16 @@ function getConstructorArgs (ctor: TCtor): TArgHandler[] {
   return ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS].map(getArgHandler);
 }
 
-function getClassId (ctor: TCtor): string {
+function getClassId (ctor: TCtor): string | undefined {
   return ctor.prototype[ClassPathSymbols.CLASS_ID];
+}
+
+function getExtendsTypeId (ctor: TCtor): string | undefined {
+  return ctor.prototype[ClassPathSymbols.EXTENDS];
+}
+
+function getInterfacesTypeId (ctor: TCtor): string[] {
+  return ctor.prototype[ClassPathSymbols.INTERFACES] || [];
 }
 
 export const ClassUtils = {
@@ -146,11 +162,15 @@ export const ClassUtils = {
   ctorArgDecorator,
   methodArgDecorator,
   assignClassId,
+  ext,
+  interfaces,
 
   getDecorators,
   getMethods,
   getConstructorArgs,
   getClassId,
+  getExtendsTypeId,
+  getInterfacesTypeId,
 };
 
 global.ClassUtils = ClassUtils;

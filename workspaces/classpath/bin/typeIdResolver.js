@@ -1,23 +1,56 @@
 /**
  * TODO: refactor this shit
  */
-const { Type } = require("ts-morph");
 const {
-  removePromiseAnnotation,
-  parseImportType,
-  removeGenericImports,
   isPrimitiveType,
   getInProjectFilePath,
   tokenizePath,
+  getImportsPaths,
 } = require("./utils");
-const path = require("path");
 
 const SKIP_TOKEN = {
   isAsync: false,
   token: "",
 };
 
-const TypeIdResolver = (() => {
+/**
+ *
+ * @param {import("ts-morph").Type} type
+ * @param {boolean} isAsync
+ * @returns {{name: string, isAsync: boolean, actualType: import("ts-morph").Type}}
+ */
+function getType (type, isAsync = false) {
+  const symbol = type.getSymbol();
+  let name = "";
+
+  if (symbol) {
+    name = symbol.getName();
+    if (name === "__type") {
+      name = type.getAliasSymbol().getName();
+    }
+
+    if (name === "Promise") {
+      const asyncType = type.getTypeArguments()[0];
+      if (isPrimitiveType(asyncType)) {
+        return {
+          name: asyncType.getText(),
+          actualType: asyncType,
+          isAsync: true,
+        };
+      }
+
+      return getType(asyncType.getApparentType(), true);
+    }
+  }
+
+  return {
+    name,
+    actualType: type,
+    isAsync,
+  };
+}
+
+module.exports.TypeIdResolver = (() => {
   let deps = [];
   let projectRoot = "";
   let pkgName = "";
@@ -41,25 +74,40 @@ const TypeIdResolver = (() => {
   }
 
   /**
-   * @param {import("ts-morph").SourceFile} file
-   * @returns {Record<string, string>}
+   * @param {string} path
+   * @param {string} entity
+   * @param {string} fromPackage
+   * @returns {string}
    */
-  function getImportsPaths(file) {
-    const imports = file.getImportDeclarations();
-    const map = {};
-
-    for (const i of imports) {
-      const path = i.getModuleSpecifierValue();
-      const namedImports = i.getNamedImports();
-
-      for (const n of namedImports) {
-        map[n.getName()] = path;
-      }
-
-      // todo: handle default imports
+  function overridePath ({ path, entity, fromPackage }) {
+    if (projectConfig?.overridePath) {
+      return projectConfig.overridePath({
+        path,
+        entity,
+        fromPackage,
+      });
     }
 
-    return map;
+    return path;
+  }
+
+  /**
+   * @param {import("ts-morph").Type} type
+   * @param {string} ext
+   * @param {string} entity
+   */
+  function tryGetExternalImportRelativePath (type, ext, entity) {
+    try {
+      const source = type.getSymbol().getDeclarations()[0].getSourceFile();
+      const filePath = `${source.getDirectoryPath()}/${source.getBaseNameWithoutExtension()}`;
+      return overridePath({
+        path: filePath,
+        entity,
+        fromPackage: ext,
+      }).split(`node_modules/${ext}`)[1];
+    } catch (e) {
+      return undefined;
+    }
   }
 
   /**
@@ -78,43 +126,17 @@ const TypeIdResolver = (() => {
   }
 
   /**
+   *
    * @param {string} path
+   * @param {string} entity
+   * @param {string|undefined} currentFilePath
    * @returns {string}
    */
-  function resolvePath (path) {
-    let actualPath = path;
-    if (projectConfig?.resolveInjectionTokenPath) {
-      actualPath = projectConfig.resolveInjectionTokenPath(path);
-    }
-
-    return tokenizePath(getInProjectFilePath(actualPath));
-  }
-
-  /**
-   *
-   * @param {import("ts-morph").Type} type
-   * @param {boolean} isAsync
-   * @returns {{name: string, isAsync: boolean}}
-   */
-  function getType (type, isAsync = false) {
-    const symbol = type.getSymbol();
-    let name = "";
-
-    if (symbol) {
-      name = symbol.getName();
-      if (name === "__type") {
-        name = type.getAliasSymbol().getName();
-      }
-
-      if (name === "Promise") {
-        return getType(type.getTypeArguments()[0], true);
-      }
-    }
-
-    return {
-      name,
-      isAsync,
-    };
+  function resolvePath ({ path, entity, currentFilePath }) {
+    return tokenizePath(overridePath({
+      path: getInProjectFilePath(path, currentFilePath),
+      entity
+    }));
   }
 
   /**
@@ -126,39 +148,38 @@ const TypeIdResolver = (() => {
 
     /**
      * @param {import("ts-morph").Type} type
-     * @param {string} ext
-     */
-    function tryGetExternalImportRelativePath (type, ext) {
-      try {
-        const source = type.getSymbol().getDeclarations()[0].getSourceFile();
-        const filePath = `${source.getDirectoryPath()}/${source.getBaseNameWithoutExtension()}`;
-        return filePath.split(`node_modules/${ext}`)[1];
-      } catch (e) {
-        return undefined;
-      }
-    }
-
-    /**
-     * @param {import("ts-morph").Type} type
+     * @returns {TInjectionToken}
      */
     function getTypeInjectionToken(type) {
-      const { isAsync, name } = getType(type);
+      const { isAsync, name, actualType } = getType(type);
       const ext = getExternalImport(imports[name]);
       let token;
 
       if (!name) {
         token = ""
-      } else if (isPrimitiveType(name)) {
+      } else if (isPrimitiveType(actualType)) {
         token = name;
       } else if (ext) {
-        token = `${ext}${tryGetExternalImportRelativePath(type, ext) || ''}#${name}`;
+        token = `${ext}${tokenizePath(tryGetExternalImportRelativePath(actualType, ext, name) || '')}#${name}`;
       } else if (name === "this") {
-        token = `${pkgName}#${resolvePath(file.getFilePath())}#${ctor.getName()}`;
+        token = `${pkgName}#${resolvePath({
+          path: file.getFilePath(),
+          currentFilePath: file.getFilePath(),
+          entity: ctor.getName(),
+        })}#${ctor.getName()}`;
       } else if (imports[name]) {
-        token = `${pkgName}#${resolvePath(imports[name])}#${name}`;
+        token = `${pkgName}#${resolvePath({
+          path: imports[name],
+          currentFilePath: file.getFilePath(),
+          entity: name,
+        })}#${name}`;
       } else {
         // current file
-        token = `${pkgName}#${resolvePath(file.getFilePath())}#${name}`;
+        token = `${pkgName}#${resolvePath({
+          path: file.getFilePath(),
+          currentFilePath: file.getFilePath(),
+          entity: name,
+        })}#${name}`;
       }
 
       return {
@@ -169,6 +190,7 @@ const TypeIdResolver = (() => {
 
     /**
      * @param {import("ts-morph").MethodDeclaration} method
+     * @returns {TInjectionToken}
      */
     function getMethodReturnInjectionToken (method) {
       if (!method.getStructure().returnType) {
@@ -180,8 +202,10 @@ const TypeIdResolver = (() => {
 
     /**
      * @param {import("ts-morph").MethodDeclaration} method
+     * @returns {TInjectionToken[]}
      */
     function getMethodArgumentsInjectionTokens (method) {
+      const name = method.getName();
       return method.getParameters().map(
         (p) => {
           if (!p.getStructure().type) {
@@ -195,6 +219,7 @@ const TypeIdResolver = (() => {
 
     /**
      * @param {import("ts-morph").ClassDeclaration} ctor
+     * @returns {TInjectionToken[]}
      */
     function getConstructorInjectionTokens (ctor) {
       /**
@@ -212,11 +237,35 @@ const TypeIdResolver = (() => {
       );
     }
 
+    /**
+     * @param {import("ts-morph").ClassDeclaration} ctor
+     * @returns {TInjectionToken[]}
+     */
+    function getInterfacesInjectionTokens (ctor) {
+      const interfaces = ctor.getImplements();
+      return interfaces.map((i) => getTypeInjectionToken(i.getType()));
+    }
+
+    /**
+     * @param {import("ts-morph").ClassDeclaration} ctor
+     * @returns {TInjectionToken|undefined}
+     */
+    function getExtendsInjectionToken (ctor) {
+      const ext = ctor.getExtends();
+      if (ext) {
+        return getTypeInjectionToken(ext.getType());
+      }
+
+      return undefined;
+    }
+
     return {
       getConstructorInjectionTokens,
       getTypeInjectionToken,
       getMethodReturnInjectionToken,
       getMethodArgumentsInjectionTokens,
+      getInterfacesInjectionTokens,
+      getExtendsInjectionToken,
     }
   }
 
@@ -224,10 +273,7 @@ const TypeIdResolver = (() => {
     setDeps,
     setProjectRoot,
     setPkgName,
+
     createInjectionTokenResolver,
   }
 })();
-
-module.exports = {
-  TypeIdResolver,
-};

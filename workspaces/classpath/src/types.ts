@@ -17,12 +17,12 @@ export type TMethod = {
 
 export type TArgument = {
   typeId: string;
-  isAsync: boolean;
+  isAsync?: boolean;
   decorators: TDecorator[];
 };
 
 export type TClassInfo = {
-  id: string;
+  typeId: string;
   ctor: TCtor,
 };
 

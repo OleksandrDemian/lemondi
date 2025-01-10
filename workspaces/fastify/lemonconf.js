@@ -1,7 +1,8 @@
 module.exports = () => {
   return {
-    resolveInjectionTokenPath: (path) => {
-      return path.replace("/src/", "/dist/");
+    overridePath: ({ path }) => {
+      // convert imports to build folder
+      return path.replace("src/", "dist/");
     },
   };
 };

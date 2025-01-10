@@ -1,32 +1,66 @@
 const path = require("path");
 
 const PRIMITIVE_TYPES = [
-  "string",
-  "number",
-  "bigint",
-  "boolean",
-  "undefined",
-  "symbol",
-  "null",
+  "string", // isString
+  "number", // isNumber
+  "bigint", // isBigInt
+  "boolean", // isBoolean
+  "undefined", // isUndefined
+  "symbol", //
+  "null", // isNull
 ];
 
-function getInProjectFilePath (filePath) {
-  const parsed = path.parse(filePath);
+/**
+ * @type {string[]}
+ */
+const PRIMITIVE_TYPES_CHECKS = [
+  "isString",
+  "isNumber",
+  "isBigInt",
+  "isBoolean",
+  "isUndefined",
+  "isNull",
+];
+
+/**
+ * @param {string} filePath
+ * @param {string|undefined} currentFile
+ * @returns {string}
+ */
+function getInProjectFilePath (filePath, currentFile) {
+  let finalPath = filePath;
+  if (currentFile) {
+    const parsed = path.parse(currentFile);
+    finalPath = path.resolve(parsed.dir, finalPath);
+  }
+
+  const parsed = path.parse(finalPath);
   return path.relative(process.cwd(), parsed.dir + '/' + parsed.name).replace(/\\/g, '/');
 }
 
+/**
+ * @param {string} path
+ * @returns {string}
+ */
 function tokenizePath (path) {
   // Get the platform-specific separator
   return path.replace(/[\\\/]/g, '#');
 }
 
 /**
- *
+ * @param {TInjectionToken} arg
+ * @returns {string}
+ */
+function stringifyArgType (arg) {
+  return `{ typeId: "${arg.token}", ${arg.isAsync ? 'isAsync: true' : ''}}`;
+}
+
+/**
  * @param {TInjectionToken[]} args
  * @returns {string}
  */
 function stringifyArgsType (args) {
-  return `[${args.map(t => `{ typeId: "${t.token}", isAsync: ${t.isAsync}`).join(", ")}]`;
+  return `[${args.map(stringifyArgType).join(", ")}]`;
 }
 
 function createIncrementalValue (start) {
@@ -34,45 +68,6 @@ function createIncrementalValue (start) {
   return () => {
     index += 1;
     return index;
-  }
-}
-
-function removePromiseAnnotation(inputStr) {
-  // Regular expression to match the pattern "Promise<...>"
-  const regex = /^Promise<(.*)>$/;
-
-  // Apply the regular expression to the input string
-  const match = inputStr.match(regex);
-
-  // If there's a match, return the content inside the Promise<...>
-  if (match) {
-    return match[1];
-  }
-
-  // If no match, return the original string
-  return inputStr;
-}
-
-function removeGenericImports(inputString) {
-  // Regular expression to match the generic imports inside angle brackets
-  const genericStart = inputString.indexOf("<");
-  if (genericStart > -1) {
-    return inputString.slice(0, genericStart);
-  }
-  return inputString;
-}
-
-function parseImportType(input) {
-  const regex = /import\(["'](.*)["']\)\.(\w+)/;
-  const match = input.match(regex);
-
-  if (match) {
-    return {
-      importPath: match[1], // The path inside the import
-      importType: match[2]  // The type after the dot
-    };
-  } else {
-    throw new Error("Invalid input string format");
   }
 }
 
@@ -102,21 +97,42 @@ function getDependencies (pkgJson) {
 }
 
 /**
- * @param {string} type
+ * @param {import("ts-morph").Type} type
  * @returns {boolean}
  */
 function isPrimitiveType (type) {
-  return PRIMITIVE_TYPES.includes(type);
+  return PRIMITIVE_TYPES_CHECKS.some(check => type[check]());
+}
+
+/**
+ * @param {import("ts-morph").SourceFile} file
+ * @returns {Record<string, string>}
+ */
+function getImportsPaths(file) {
+  const imports = file.getImportDeclarations();
+  const map = {};
+
+  for (const i of imports) {
+    const path = i.getModuleSpecifierValue();
+    const namedImports = i.getNamedImports();
+
+    for (const n of namedImports) {
+      map[n.getName()] = path;
+    }
+
+    // todo: handle default imports
+  }
+
+  return map;
 }
 
 module.exports = {
   getInProjectFilePath,
   stringifyArgsType,
   createIncrementalValue,
-  removePromiseAnnotation,
-  removeGenericImports,
-  parseImportType,
   getDependencies,
   tokenizePath,
   isPrimitiveType,
+  getImportsPaths,
+  stringifyArgType,
 }

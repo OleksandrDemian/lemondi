@@ -5,6 +5,7 @@ const {
   createIncrementalValue,
   stringifyArgsType,
   getDependencies,
+  stringifyArgType,
 } = require("./utils");
 const fs = require("fs");
 const {TypeIdResolver} = require("./typeIdResolver");
@@ -31,9 +32,18 @@ async function run () {
       const statements = [];
       const resolver = TypeIdResolver.createInjectionTokenResolver(file, ctor);
       const constructorTypes = resolver.getConstructorInjectionTokens(ctor);
+      const interfaces = resolver.getInterfacesInjectionTokens(ctor);
+      const ext = resolver.getExtendsInjectionToken(ctor);
 
-      statements.push(`ClassPath.register({ id: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
+      statements.push(`ClassPath.register({ typeId: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
       statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
+      if (ext) {
+        statements.push(`ClassPath.ext(${ctor.getName()}, ${stringifyArgType(ext)})`);
+      }
+
+      if (interfaces.length > 0) {
+        statements.push(`ClassUtils.interfaces(${ctor.getName()}, ${stringifyArgsType(interfaces)});`);
+      }
 
       /**
        * @type {ParameterDeclaration[]}
@@ -68,7 +78,7 @@ async function run () {
         const args = resolver.getMethodArgumentsInjectionTokens(method);
         const ret = resolver.getMethodReturnInjectionToken(method);
 
-        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.token}", isAsync: ${ret.isAsync} };`);
+        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, ${stringifyArgType(ret)};`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {
@@ -138,10 +148,14 @@ async function run () {
         statements.push(`ClassUtils.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
       }
 
-      const nextIndex = createIncrementalValue(ctor.getChildIndex());
-      statements.forEach((s) => {
-        file.insertStatements(nextIndex(), s);
-      });
+      try {
+        const nextIndex = createIncrementalValue(ctor.getChildIndex());
+        statements.forEach((s) => {
+          file.insertStatements(nextIndex(), s);
+        });
+      } catch(e) {
+        console.log(e);
+      }
     }
   }
 
