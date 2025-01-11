@@ -52,7 +52,7 @@ export class FastifyModule {
   }
 
   private async buildRoutes () {
-    const cls = ClassPath.getClasses();
+    const cls = ClassPath.findDecoratedClasses(Router);
 
     for (const c of cls) {
       const [routerDecorator] = ClassUtils.getDecorators(c, Router);

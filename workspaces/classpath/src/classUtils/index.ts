@@ -26,8 +26,16 @@ function createMethod (ctor: TCtor, method: string) {
   }
 }
 
+function createArgument (arg: TArgument): TArgument {
+  return {
+    typeId: arg.typeId,
+    decorators: arg.decorators || [],
+    isAsync: !!arg.isAsync,
+  };
+}
+
 function ctorArgs (ctor: TCtor, args: TArgument[]) {
-  ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args;
+  ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args.map(createArgument);
 }
 
 function assignClassId (ctor: TCtor, id: string) {
@@ -37,7 +45,7 @@ function assignClassId (ctor: TCtor, id: string) {
 function method(ctor: TCtor, method: string, args: TArgument[], ret: TArgument) {
   createMethod(ctor, method);
 
-  ctor.prototype[ClassPathSymbols.METHODS][method].args = args;
+  ctor.prototype[ClassPathSymbols.METHODS][method].args = args.map(createArgument);
   ctor.prototype[ClassPathSymbols.METHODS][method].ret = ret;
 }
 
@@ -82,7 +90,7 @@ function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, deco
   } satisfies TDecorator);
 }
 
-function ext (ctor: TCtor, interfaces: { typeId: string }[]) {
+function extend (ctor: TCtor, interfaces: { typeId: string }[]) {
   ctor.prototype[ClassPathSymbols.INTERFACES] = interfaces.map((i) => i.typeId);
 }
 
@@ -155,16 +163,18 @@ function getInterfacesTypeId (ctor: TCtor): string[] {
 }
 
 export const ClassUtils = {
-  ctorArgs,
-  method,
-  classDecorator,
-  methodDecorator,
-  ctorArgDecorator,
-  methodArgDecorator,
-  assignClassId,
-  ext,
-  interfaces,
+  R: {
+    ctorArgs,
+    method,
+    classDecorator,
+    methodDecorator,
+    ctorArgDecorator,
+    methodArgDecorator,
+    extend,
+    interfaces,
+  },
 
+  assignClassId,
   getDecorators,
   getMethods,
   getConstructorArgs,

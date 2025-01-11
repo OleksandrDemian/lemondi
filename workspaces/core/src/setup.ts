@@ -55,8 +55,8 @@ async function initFactory (c: TCtor) {
 }
 
 export const setup = async () => {
-  const classes = ClassPath.getClasses();
-  for (const c of classes) {
+  const factories: TCtor[] = [];
+  ClassPath.scan((c: TCtor) => {
     const [component] = ClassUtils.getDecorators(c, Component);
 
     if (component) {
@@ -65,7 +65,11 @@ export const setup = async () => {
 
     const [factory] = ClassUtils.getDecorators(c, Factory);
     if (factory) {
-      await initFactory(c);
+      factories.push(c);
     }
+  });
+
+  for (const factory of factories) {
+    await initFactory(factory);
   }
 };

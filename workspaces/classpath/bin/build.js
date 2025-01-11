@@ -36,13 +36,13 @@ async function run () {
       const ext = resolver.getExtendsInjectionToken(ctor);
 
       statements.push(`ClassPath.register({ typeId: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
-      statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
+      statements.push(`ClassUtils.R.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
       if (ext) {
-        statements.push(`ClassPath.ext(${ctor.getName()}, ${stringifyArgType(ext)})`);
+        statements.push(`ClassPath.R.extend(${ctor.getName()}, ${stringifyArgType(ext)})`);
       }
 
       if (interfaces.length > 0) {
-        statements.push(`ClassUtils.interfaces(${ctor.getName()}, ${stringifyArgsType(interfaces)});`);
+        statements.push(`ClassUtils.R.interfaces(${ctor.getName()}, ${stringifyArgsType(interfaces)});`);
       }
 
       /**
@@ -69,7 +69,7 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`ClassUtils.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.R.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
         }
       }
 
@@ -78,7 +78,7 @@ async function run () {
         const args = resolver.getMethodArgumentsInjectionTokens(method);
         const ret = resolver.getMethodReturnInjectionToken(method);
 
-        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, ${stringifyArgType(ret)};`);
+        statements.push(`ClassUtils.R.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, ${stringifyArgType(ret)};`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {
@@ -98,7 +98,7 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`ClassUtils.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.R.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
         }
 
         const parameters = method.getParameters();
@@ -123,7 +123,7 @@ async function run () {
               props.replaceWithText(propsVarName);
             }
 
-            statements.push(`ClassUtils.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
+            statements.push(`ClassUtils.R.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
           }
         }
       }
@@ -145,7 +145,7 @@ async function run () {
           props.replaceWithText(propsVarName);
         }
 
-        statements.push(`ClassUtils.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
+        statements.push(`ClassUtils.R.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
       }
 
       try {
