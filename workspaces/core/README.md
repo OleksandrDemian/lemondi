@@ -24,6 +24,8 @@ Installation:
 npm install @lemondi/core @lemondi/classpath
 ```
 
+**Make sure to install the same version of core and classpath as it relies on Symbols, so both packages should reference the same library code**
+
 Package json build command:
 
 ```json
@@ -34,8 +36,8 @@ Package json build command:
     "build:lemon": "lemondi"
   },
   "dependencies": {
-    "@lemondi/core": "0.0.0-alpha.5",
-    "@lemondi/classpath": "0.0.0-alpha.5"
+    "@lemondi/core": "0.0.0-alpha.11",
+    "@lemondi/classpath": "0.0.0-alpha.11"
   }
 }
 ```
