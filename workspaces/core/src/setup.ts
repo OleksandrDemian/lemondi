@@ -1,6 +1,6 @@
-import {Component} from "./decorators/Component";
+import {Component, TComponentProps} from "./decorators/Component";
 import {addComponentProto, getDependencies, instantiate, TComponentProto} from "./container/di";
-import {Factory, Instantiate} from "./decorators/Factory";
+import {Factory, Instantiate, TInstantiateProps} from "./decorators/Factory";
 import {ClassPath, ClassUtils, TCtor} from "@lemondi/classpath";
 
 function initComponent (c: TCtor) {
@@ -20,7 +20,15 @@ function initComponent (c: TCtor) {
     }
   })();
 
-  addComponentProto([ClassUtils.getClassId(c)], factory);
+  const [component] = ClassUtils.getDecorators(c, Component);
+  const props = component?.getProps() as TComponentProps | undefined;
+
+  addComponentProto(
+    factory,
+    ClassUtils.getClassId(c),
+    props?.qualifier,
+    props?.isDefault,
+  );
 }
 
 async function initFactory (c: TCtor) {
@@ -49,7 +57,14 @@ async function initFactory (c: TCtor) {
         }
       };
 
-      addComponentProto([method.getReturnType().getTypeId()], factory());
+      const instantiateProps = decorator.getProps() as TInstantiateProps | undefined;
+
+      addComponentProto(
+        factory(),
+        method.getReturnType().getTypeId(),
+        instantiateProps?.qualifier,
+        !!instantiateProps?.default,
+      );
     }
   }
 }

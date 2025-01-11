@@ -2,8 +2,10 @@ export function Factory(): ClassDecorator {
   return () => {}
 }
 
-export function Instantiate(props?: {
-  qualifiers: (symbol | string)[];
-}): MethodDecorator {
+export type TInstantiateProps = {
+  qualifier?: symbol | string;
+  default?: boolean;
+};
+export function Instantiate(props?: TInstantiateProps): MethodDecorator {
   return () => {};
 }

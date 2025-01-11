@@ -1,6 +1,8 @@
-export function Component (props?: {
-  qualifiers: (symbol | string)[];
-}): ClassDecorator {
+export type TComponentProps = {
+  qualifier?: symbol | string;
+  isDefault?: boolean;
+};
+export function Component (props?: TComponentProps): ClassDecorator {
   return () => {};
 }
 
