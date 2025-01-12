@@ -1,5 +1,5 @@
 /**
- * TODO: refactor this shit
+ * TODO: refactor this shit and add some comments, I don't know what is going here anymore
  */
 const {
   isPrimitiveType,
@@ -20,26 +20,39 @@ const SKIP_TOKEN = {
  * @returns {{name: string, isAsync: boolean, actualType: import("ts-morph").Type}}
  */
 function getType (type, isAsync = false) {
+  const text = type.getText();
+  if (isPrimitiveType(type)) {
+    return {
+      name: type.getText(),
+      actualType: type,
+      isAsync,
+    };
+  }
+
   const symbol = type.getSymbol();
   let name = "";
 
   if (symbol) {
     name = symbol.getName();
     if (name === "__type") {
-      name = type.getAliasSymbol().getName();
+      if (!type.getAliasSymbol()) {
+        console.warn("Explicit types are not mapped. Found type: " + type.getText());
+      } else {
+        name = type.getAliasSymbol().getName();
+      }
     }
 
     if (name === "Promise") {
-      const asyncType = type.getTypeArguments()[0];
-      if (isPrimitiveType(asyncType)) {
-        return {
-          name: asyncType.getText(),
-          actualType: asyncType,
-          isAsync: true,
-        };
-      }
-
-      return getType(asyncType.getApparentType(), true);
+      return getType(type.getTypeArguments()[0], true);
+    }
+  } else {
+    const aliasSymbol = type.getAliasSymbol();
+    if (aliasSymbol) {
+      return {
+        name: aliasSymbol.getName(),
+        actualType: type,
+        isAsync,
+      };
     }
   }
 

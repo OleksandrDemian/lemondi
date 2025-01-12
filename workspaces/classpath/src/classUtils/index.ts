@@ -90,12 +90,13 @@ function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, deco
   } satisfies TDecorator);
 }
 
-function extend (ctor: TCtor, interfaces: { typeId: string }[]) {
-  ctor.prototype[ClassPathSymbols.INTERFACES] = interfaces.map((i) => i.typeId);
+function extend (ctor: TCtor, extTypeId: string) {
+  ctor.prototype[ClassPathSymbols.EXTENDS] = extTypeId;
+
 }
 
-function interfaces (ctor: TCtor, extTypeId: string) {
-  ctor.prototype[ClassPathSymbols.EXTENDS] = extTypeId;
+function interfaces (ctor: TCtor, interfaces: { typeId: string }[]) {
+  ctor.prototype[ClassPathSymbols.INTERFACES] = interfaces.map((i) => i.typeId);
 }
 
 function getDecoratorHandler (decorator: TDecorator): TDecoratorHandler {

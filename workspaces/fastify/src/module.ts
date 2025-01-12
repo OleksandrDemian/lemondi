@@ -33,7 +33,7 @@ export class FastifyModule {
     private instanceConfig: FastifyHttpOptions<any>,
     private listenConfig: FastifyListenOptions,
   ) {
-    console.log(config);
+    console.log(config, instanceConfig, listenConfig);
     this.fastify = Fastify(this.instanceConfig);
   }
 

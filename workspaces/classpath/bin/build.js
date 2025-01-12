@@ -38,7 +38,7 @@ async function run () {
       statements.push(`ClassPath.register({ typeId: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
       statements.push(`ClassUtils.R.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
       if (ext) {
-        statements.push(`ClassPath.R.extend(${ctor.getName()}, ${stringifyArgType(ext)})`);
+        statements.push(`ClassUtils.R.extend(${ctor.getName()}, ${stringifyArgType(ext)})`);
       }
 
       if (interfaces.length > 0) {
@@ -49,10 +49,11 @@ async function run () {
        * @type {ParameterDeclaration[]}
        */
       const parameters = ctor.getConstructors()[0]?.getParameters() || [];
-      for (const p of parameters) {
+      for (let i = 0; i < parameters.length; i++) {
+        const p = parameters[i];
         const decorators = p.getDecorators();
-        for (let i = 0; i < decorators.length; i++) {
-          const decorator = decorators[i];
+        for (let j = 0; j < decorators.length; j++) {
+          const decorator = decorators[j];
           const props = decorator.getArguments()[0];
           let propsVarName;
 
