@@ -20,7 +20,6 @@ const SKIP_TOKEN = {
  * @returns {{name: string, isAsync: boolean, actualType: import("ts-morph").Type}}
  */
 function getType (type, isAsync = false) {
-  const text = type.getText();
   if (isPrimitiveType(type)) {
     return {
       name: type.getText(),

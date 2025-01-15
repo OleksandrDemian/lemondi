@@ -34,8 +34,8 @@ Package json build command:
     "build:lemon": "lemondi"
   },
   "dependencies": {
-    "@lemondi/core": "0.0.0-alpha.6",
-    "@lemondi/classpath": "0.0.0-alpha.6"
+    "@lemondi/core": "0.0.0-alpha.13",
+    "@lemondi/classpath": "0.0.0-alpha.13"
   }
 }
 ```

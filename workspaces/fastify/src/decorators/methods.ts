@@ -1,26 +1,7 @@
-export type TRouteProps = {
-  isAbsolute?: boolean;
-  path?: string;
-};
+import {RouteOptions} from "fastify";
 
-export function Get (props?: TRouteProps): MethodDecorator {
-  return () => {};
-}
+export type FastifyRouteProps = Omit<RouteOptions, 'handler'>;
 
-export function Post (props?: TRouteProps): MethodDecorator {
-  return () => {};
-}
-
-export function Put (props?: TRouteProps): MethodDecorator {
-  return () => {};
-}
-
-
-export function Delete (props?: TRouteProps): MethodDecorator {
-  return () => {};
-}
-
-
-export function Options (props?: TRouteProps): MethodDecorator {
+export function Route (props: FastifyRouteProps): MethodDecorator {
   return () => {};
 }

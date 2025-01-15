@@ -1,28 +1,45 @@
-import {ClassUtils, TArgHandler} from "@lemondi/classpath";
+import {ClassUtils, TArgHandler, TMethodHandler} from "@lemondi/classpath";
 import {Qualifier} from "../decorators/Qualifier";
 
-export type TComponentProto = {
+export type TComponentFactoryInit = () => Promise<any>;
+
+export type TComponentFactory = {
   getValue: () => any;
   getIsReady: () => boolean;
-  init: () => Promise<any>;
+  init: TComponentFactoryInit;
 };
 
-export type TDiComponent = {
-  proto: TComponentProto;
+type TComponentFactoryEntry = {
+  proto: TComponentFactory;
   qualifier?: symbol | string;
   isDefault: boolean;
   type: string;
 };
 
-const diComponents: TDiComponent[] = [];
+const factories: TComponentFactoryEntry[] = [];
 
-export const addComponentProto = (proto: TComponentProto, type: string, qualifier: string | symbol | undefined, isDefault: boolean) => {
-  diComponents.push({
-    proto,
+const createFactory = (factory: TComponentFactoryInit): TComponentFactory => {
+  let value: any = undefined;
+  let isReady: boolean;
+
+  async function init () {
+    value = await factory();
+  }
+
+  return {
+    init,
+    getValue: () => value,
+    getIsReady: () => isReady,
+  }
+};
+
+const registerComponentFactory = (factory: TComponentFactoryInit, type: string, qualifier: string | symbol | undefined, isDefault: boolean) => {
+  factories.push({
+    proto: createFactory(factory),
     qualifier,
     isDefault,
     type,
-  } satisfies TDiComponent);
+  } satisfies TComponentFactoryEntry);
 };
 
 export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
@@ -39,12 +56,12 @@ export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
   return Promise.all(components);
 };
 
-export const getComponent = async <T> (typeId: string | symbol, qualifier?: symbol | string): Promise<T> => {
+const getComponent = async <T> (typeId: string | symbol, qualifier?: symbol | string): Promise<T> => {
   if (!typeId || typeId === "unsupported" || typeId === "") {
     throw new Error(`Cannot inject "unsupported" type. Please check build logs to determine where unsupported id was generated`);
   }
 
-  const query: TDiComponent[] = diComponents.filter((component) => {
+  const query: TComponentFactoryEntry[] = factories.filter((component) => {
     if (component.type === typeId) {
       if (qualifier && qualifier !== component.qualifier) {
         return false;
@@ -56,7 +73,7 @@ export const getComponent = async <T> (typeId: string | symbol, qualifier?: symb
     return false;
   });
 
-  let proto: TComponentProto = undefined;
+  let proto: TComponentFactory = undefined;
 
   if(query.length === 1) {
     proto = query[0].proto;
@@ -79,10 +96,24 @@ export const getComponent = async <T> (typeId: string | symbol, qualifier?: symb
   return proto.getValue() as T;
 };
 
-export const instantiate = async <T>(ctor: new (...args: any) => T) => {
+const instantiate = async <T>(ctor: new (...args: any) => T) => {
   return Reflect.construct(
     ctor,
     await getDependencies(
       ClassUtils.getConstructorArgs(ctor),
     ));
+};
+
+const instantiateMethod = async (host: any, method: TMethodHandler) => {
+  const deps = await getDependencies(
+    method.getArguments(),
+  );
+
+  return host[method.getName()](...deps);
+};
+
+export const AppContext = {
+  registerComponentFactory: registerComponentFactory,
+  instantiate: instantiate,
+  instantiateMethod: instantiateMethod,
 };
