@@ -21,6 +21,8 @@ export type TArgument = {
   decorators: TDecorator[];
 };
 
+export type TBuildArgument = [string, number];
+
 export type TClassInfo = {
   typeId: string;
   ctor: TCtor,

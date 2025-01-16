@@ -52,7 +52,7 @@ function tokenizePath (path) {
  * @returns {string}
  */
 function stringifyArgType (arg) {
-  return `{ typeId: "${arg.token}", ${arg.isAsync ? 'isAsync: true' : ''}}`;
+  return `["${arg.token}",${arg.mod ?? 0}]`;
 }
 
 /**

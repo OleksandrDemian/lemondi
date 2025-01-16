@@ -7,9 +7,10 @@ const {
   tokenizePath,
   getImportsPaths,
 } = require("./utils");
+const { ArgMod } = require("../dist/argMod/index");
 
 const SKIP_TOKEN = {
-  isAsync: false,
+  mod: 0,
   token: "",
 };
 
@@ -18,14 +19,14 @@ const SKIP_TOKEN = {
  * @param {import("ts-morph").Type} type
  * @param {boolean} isAsync
  * @param {boolean} isArray
- * @returns {{name: string, isAsync: boolean, actualType: import("ts-morph").Type}}
+ * @returns {{name: string, mod: number, actualType: import("ts-morph").Type}}
  */
 function getType (type, isAsync = false, isArray = false) {
   if (isPrimitiveType(type)) {
     return {
       name: type.getText(),
       actualType: type,
-      isAsync,
+      mod: ArgMod.generate({ isArray, isAsync }),
     };
   }
 
@@ -43,7 +44,9 @@ function getType (type, isAsync = false, isArray = false) {
     }
 
     if (name === "Promise") {
-      return getType(type.getTypeArguments()[0], true);
+      return getType(type.getTypeArguments()[0], true, isArray);
+    } else if (name === "Array") {
+      return getType(type.getTypeArguments()[0], isAsync, true);
     }
   } else {
     const aliasSymbol = type.getAliasSymbol();
@@ -51,7 +54,7 @@ function getType (type, isAsync = false, isArray = false) {
       return {
         name: aliasSymbol.getName(),
         actualType: type,
-        isAsync,
+        mod: ArgMod.generate({ isArray, isAsync }),
       };
     }
   }
@@ -59,7 +62,7 @@ function getType (type, isAsync = false, isArray = false) {
   return {
     name,
     actualType: type,
-    isAsync,
+    mod: ArgMod.generate({ isArray, isAsync }),
   };
 }
 
@@ -164,8 +167,7 @@ module.exports.TypeIdResolver = (() => {
      * @returns {TInjectionToken}
      */
     function getTypeInjectionToken(type) {
-      const tname = type.getText();
-      const { isAsync, name, actualType } = getType(type);
+      const { mod, name, actualType } = getType(type);
       const ext = getExternalImport(imports[name]);
       let token;
 
@@ -197,7 +199,7 @@ module.exports.TypeIdResolver = (() => {
       }
 
       return {
-        isAsync,
+        mod,
         token,
       }
     }
