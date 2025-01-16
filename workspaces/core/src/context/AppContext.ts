@@ -48,6 +48,11 @@ export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
       return undefined;
     }
 
+    if (type.getIsArray()) {
+      console.warn("Arrays are not currently supported");
+      return undefined;
+    }
+
     const [qualifier] = type.getDecorators(Qualifier);
     return getComponent(type.getTypeId(), qualifier?.getProps());
   });

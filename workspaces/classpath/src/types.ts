@@ -1,6 +1,6 @@
 export type TCtor = new (...args: any[]) => any;
 
-export type TDecoratorCtor = (args: any) => any;
+export type TDecoratorCtor <T = any> = (args: T) => any;
 
 export type TDecorator = {
   id: symbol;
@@ -18,6 +18,7 @@ export type TMethod = {
 export type TArgument = {
   typeId: string;
   isAsync?: boolean;
+  isArray?: boolean;
   decorators: TDecorator[];
 };
 
@@ -28,23 +29,21 @@ export type TClassInfo = {
   ctor: TCtor,
 };
 
-export type TDecoratorHandler = {
+export type TDecoratorHandler<T = any> = {
   getCtor: () => TDecoratorCtor;
-  getProps: () => any;
+  getProps: () => T;
 };
 
 export type TArgHandler = {
-  getDecorators: (decorator: TDecoratorCtor) => TDecoratorHandler[],
+  getDecorators: <T>(decorator: TDecoratorCtor<T>) => TDecoratorHandler<T>[],
   getTypeId: () => string;
   getIsAsync: () => boolean;
+  getIsArray: () => boolean;
 }
 
 export type TMethodHandler = {
-  getDecorators: (decorator: TDecoratorCtor) => TDecoratorHandler[],
-  getReturnType: () => {
-    getTypeId: () => string;
-    getIsAsync: () => boolean;
-  },
+  getDecorators: <T>(decorator: TDecoratorCtor<T>) => TDecoratorHandler<T>[],
+  getReturnType: () => TArgHandler,
   getName: () => string;
   getArguments: () => TArgHandler[];
 };

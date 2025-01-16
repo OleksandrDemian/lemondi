@@ -34,6 +34,7 @@ function createArgument ([typeId, mod]: TBuildArgument): TArgument {
     typeId: typeId,
     decorators: [],
     isAsync: parseMod.isAsync,
+    isArray: parseMod.isArray,
   };
 }
 
@@ -115,6 +116,7 @@ function getArgHandler (arg: TArgument): TArgHandler {
       .map(getDecoratorHandler),
     getTypeId: () => arg.typeId,
     getIsAsync: () => arg.isAsync,
+    getIsArray: () => arg.isArray,
   }
 }
 
@@ -123,16 +125,13 @@ function getMethodHandler (method: TMethod): TMethodHandler {
     getDecorators: (decorator: TDecoratorCtor) => method.decorators
       .filter(d => d.ctor === decorator)
       .map(getDecoratorHandler),
-    getReturnType: () => ({
-      getTypeId: () => method.ret.typeId,
-      getIsAsync: () => method.ret.isAsync,
-    }),
+    getReturnType: () => getArgHandler(method.ret),
     getName: () => method.name,
     getArguments: () => method.args.map(getArgHandler),
   };
 }
 
-function getDecorators (ctor: TCtor, decorator: TDecoratorCtor): TDecoratorHandler[] {
+function getDecorators <T>(ctor: TCtor, decorator: TDecoratorCtor<T>): TDecoratorHandler<T>[] {
   const decorators = ctor.prototype[ClassPathSymbols.DECORATORS] as TDecorator[];
   if (decorators) {
     return decorators

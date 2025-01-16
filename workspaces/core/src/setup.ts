@@ -1,11 +1,11 @@
-import { Component, TComponentProps } from "./decorators/Component";
+import { Component } from "./decorators/Component";
 import { AppContext } from "./context/AppContext";
-import { Factory, Instantiate, TInstantiateProps } from "./decorators/Factory";
+import { Factory, Instantiate } from "./decorators/Factory";
 import { ClassPath, ClassUtils, TCtor } from "@lemondi/classpath";
 
 function initComponent (c: TCtor) {
   const [component] = ClassUtils.getDecorators(c, Component);
-  const props = component?.getProps() as TComponentProps | undefined;
+  const props = component?.getProps();
 
   AppContext.registerComponentFactory(
     () => AppContext.instantiate(c),
@@ -22,14 +22,19 @@ async function initFactory (c: TCtor) {
   for (const method of methods) {
     const [decorator] = method.getDecorators(Instantiate);
     if (decorator) {
-      const instantiateProps = decorator.getProps() as TInstantiateProps | undefined;
-
-      AppContext.registerComponentFactory(
-        () => AppContext.instantiateMethod(factoryInstance, method),
-        method.getReturnType().getTypeId(),
-        instantiateProps?.qualifier,
-        !!instantiateProps?.default,
-      );
+      if (method.getReturnType().getIsArray()) {
+        console.warn(`[${c.name}->${method.getName()}] A factory cannot return array`);
+      } else if (!method.getReturnType().getTypeId()) {
+        console.warn(`[${c.name}->${method.getName()}] A factory should have explicit return type (cannot be literal type, union or intersection)`);
+      } else {
+        const instantiateProps = decorator.getProps();
+        AppContext.registerComponentFactory(
+          () => AppContext.instantiateMethod(factoryInstance, method),
+          method.getReturnType().getTypeId(),
+          instantiateProps?.qualifier,
+          !!instantiateProps?.default,
+        );
+      }
     }
   }
 }
