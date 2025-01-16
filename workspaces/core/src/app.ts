@@ -1,8 +1,8 @@
 import { FilesLoader } from "./filesLoader";
-import { instantiate} from "./container/di";
+import { AppContext } from "./context/AppContext";
 import { OnInit } from "./decorators/Component";
 import {setup} from "./setup";
-import {ClassUtils, TCtor} from "@lemondi/classpath";
+import { ClassUtils, TCtor } from "@lemondi/classpath";
 
 export type TStartProps = {
   modules: TCtor[],
@@ -21,7 +21,7 @@ export const start = (props: TStartProps) => {
     await setup();
 
     for (const module of props.modules) {
-      const component = await instantiate(module);
+      const component = await AppContext.instantiate(module);
       const methods = ClassUtils.getMethods(module);
 
       for (const method of methods) {

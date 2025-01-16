@@ -2,7 +2,7 @@ import {ClassPathSymbols} from "./symbols";
 import {assignDecoratorId} from "./utils";
 import {
   TArgHandler,
-  TArgument,
+  TArgument, TBuildArgument,
   TCtor,
   TDecorator,
   TDecoratorCtor,
@@ -10,6 +10,7 @@ import {
   TMethod,
   TMethodHandler
 } from "../types";
+import {ArgMod} from "../argMod";
 
 function createMethod (ctor: TCtor, method: string) {
   if (!ctor.prototype[ClassPathSymbols.METHODS]) {
@@ -26,19 +27,30 @@ function createMethod (ctor: TCtor, method: string) {
   }
 }
 
-function ctorArgs (ctor: TCtor, args: TArgument[]) {
-  ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args;
+function createArgument ([typeId, mod]: TBuildArgument): TArgument {
+  const parseMod = ArgMod.decode(mod);
+
+  return {
+    typeId: typeId,
+    decorators: [],
+    isAsync: parseMod.isAsync,
+    isArray: parseMod.isArray,
+  };
+}
+
+function ctorArgs (ctor: TCtor, args: TBuildArgument[]) {
+  ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS] = args.map(createArgument);
 }
 
 function assignClassId (ctor: TCtor, id: string) {
   ctor.prototype[ClassPathSymbols.CLASS_ID] = id;
 }
 
-function method(ctor: TCtor, method: string, args: TArgument[], ret: TArgument) {
+function method(ctor: TCtor, method: string, args: TBuildArgument[], ret: TBuildArgument) {
   createMethod(ctor, method);
 
-  ctor.prototype[ClassPathSymbols.METHODS][method].args = args;
-  ctor.prototype[ClassPathSymbols.METHODS][method].ret = ret;
+  ctor.prototype[ClassPathSymbols.METHODS][method].args = args.map(createArgument);
+  ctor.prototype[ClassPathSymbols.METHODS][method].ret = createArgument(ret);
 }
 
 function classDecorator(ctor: TCtor, decorator: any, props: any) {
@@ -82,6 +94,14 @@ function methodArgDecorator (ctor: TCtor, method: string, argIndex: number, deco
   } satisfies TDecorator);
 }
 
+function extend (ctor: TCtor, [extTypeId]: TBuildArgument) {
+  ctor.prototype[ClassPathSymbols.EXTENDS] = extTypeId;
+}
+
+function interfaces (ctor: TCtor, interfaces: TBuildArgument[]) {
+  ctor.prototype[ClassPathSymbols.INTERFACES] = interfaces.map((i) => i[0]);
+}
+
 function getDecoratorHandler (decorator: TDecorator): TDecoratorHandler {
   return {
     getCtor: () => decorator.ctor,
@@ -96,6 +116,7 @@ function getArgHandler (arg: TArgument): TArgHandler {
       .map(getDecoratorHandler),
     getTypeId: () => arg.typeId,
     getIsAsync: () => arg.isAsync,
+    getIsArray: () => arg.isArray,
   }
 }
 
@@ -104,16 +125,13 @@ function getMethodHandler (method: TMethod): TMethodHandler {
     getDecorators: (decorator: TDecoratorCtor) => method.decorators
       .filter(d => d.ctor === decorator)
       .map(getDecoratorHandler),
-    getReturnType: () => ({
-      getTypeId: () => method.ret.typeId,
-      getIsAsync: () => method.ret.isAsync,
-    }),
+    getReturnType: () => getArgHandler(method.ret),
     getName: () => method.name,
     getArguments: () => method.args.map(getArgHandler),
   };
 }
 
-function getDecorators (ctor: TCtor, decorator: TDecoratorCtor): TDecoratorHandler[] {
+function getDecorators <T>(ctor: TCtor, decorator: TDecoratorCtor<T>): TDecoratorHandler<T>[] {
   const decorators = ctor.prototype[ClassPathSymbols.DECORATORS] as TDecorator[];
   if (decorators) {
     return decorators
@@ -125,7 +143,12 @@ function getDecorators (ctor: TCtor, decorator: TDecoratorCtor): TDecoratorHandl
 }
 
 function getMethods (ctor: TCtor): TMethodHandler[] {
-  return Object.keys(ctor.prototype[ClassPathSymbols.METHODS])
+  const methods = ctor.prototype[ClassPathSymbols.METHODS];
+  if (!methods) {
+    return [];
+  }
+
+  return Object.keys(methods)
     .map((m) =>
       getMethodHandler(ctor.prototype[ClassPathSymbols.METHODS][m]));
 }
@@ -134,23 +157,37 @@ function getConstructorArgs (ctor: TCtor): TArgHandler[] {
   return ctor.prototype[ClassPathSymbols.CTOR_ARGUMENTS].map(getArgHandler);
 }
 
-function getClassId (ctor: TCtor): string {
+function getClassId (ctor: TCtor): string | undefined {
   return ctor.prototype[ClassPathSymbols.CLASS_ID];
 }
 
-export const ClassUtils = {
-  ctorArgs,
-  method,
-  classDecorator,
-  methodDecorator,
-  ctorArgDecorator,
-  methodArgDecorator,
-  assignClassId,
+function getExtendsTypeId (ctor: TCtor): string | undefined {
+  return ctor.prototype[ClassPathSymbols.EXTENDS];
+}
 
+function getInterfacesTypeId (ctor: TCtor): string[] {
+  return ctor.prototype[ClassPathSymbols.INTERFACES] || [];
+}
+
+export const ClassUtils = {
+  R: {
+    ctorArgs,
+    method,
+    classDecorator,
+    methodDecorator,
+    ctorArgDecorator,
+    methodArgDecorator,
+    extend,
+    interfaces,
+  },
+
+  assignClassId,
   getDecorators,
   getMethods,
   getConstructorArgs,
   getClassId,
+  getExtendsTypeId,
+  getInterfacesTypeId,
 };
 
 global.ClassUtils = ClassUtils;

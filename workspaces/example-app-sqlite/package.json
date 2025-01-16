@@ -1,5 +1,5 @@
 {
-  "name": "@lemondi/test",
+  "name": "@lemondi/example-app-sqlite",
   "version": "0.0.0",
   "description": "",
   "main": "src/app.ts",
@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lemondi/core": "^0.0.0-alpha.6",
-    "@lemondi/classpath": "^0.0.0-alpha.6",
+    "@lemondi/core": "^0.0.0-alpha.13",
+    "@lemondi/classpath": "0.0.0-alpha.13",
     "class-transformer": "^0.5.1",
     "reflect-metadata": "^0.2.2",
     "sqlite3": "^5.1.7",

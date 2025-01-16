@@ -3,9 +3,9 @@
 const { Project } = require("ts-morph");
 const {
   createIncrementalValue,
-  getFilePath,
   stringifyArgsType,
-  getDependencies, pathToPackage,
+  getDependencies,
+  stringifyArgType,
 } = require("./utils");
 const fs = require("fs");
 const {TypeIdResolver} = require("./typeIdResolver");
@@ -30,22 +30,30 @@ async function run () {
 
     for (const ctor of classes) {
       const statements = [];
-      const pkg = pathToPackage(getFilePath(file.getFilePath()));
-      TypeIdResolver.setCurrentClass(ctor.getName());
+      const resolver = TypeIdResolver.createInjectionTokenResolver(file, ctor);
+      const constructorTypes = resolver.getConstructorInjectionTokens(ctor);
+      const interfaces = resolver.getInterfacesInjectionTokens(ctor);
+      const ext = resolver.getExtendsInjectionToken(ctor);
 
-      const parameters = ctor.getConstructors()[0]?.getParameters() || [];
-      const constructorTypes = [];
-      for (const p of parameters) {
-        constructorTypes.push(TypeIdResolver.typeToString(file.getFilePath(), p.getType()));
+      statements.push(`ClassPath.register({ typeId: "${resolver.getTypeInjectionToken(ctor.getType()).token}", ctor: ${ctor.getName()} })`);
+      statements.push(`ClassUtils.R.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
+      if (ext) {
+        statements.push(`ClassUtils.R.extend(${ctor.getName()}, ${stringifyArgType(ext)})`);
       }
 
-      statements.push(`ClassPath.register({ id: "${pkg}#${ctor.getName()}", ctor: ${ctor.getName()} })`);
-      statements.push(`ClassUtils.ctorArgs(${ctor.getName()}, ${stringifyArgsType(constructorTypes)});`);
+      if (interfaces.length > 0) {
+        statements.push(`ClassUtils.R.interfaces(${ctor.getName()}, ${stringifyArgsType(interfaces)});`);
+      }
 
-      for (const p of parameters) {
+      /**
+       * @type {ParameterDeclaration[]}
+       */
+      const parameters = ctor.getConstructors()[0]?.getParameters() || [];
+      for (let i = 0; i < parameters.length; i++) {
+        const p = parameters[i];
         const decorators = p.getDecorators();
-        for (let i = 0; i < decorators.length; i++) {
-          const decorator = decorators[i];
+        for (let j = 0; j < decorators.length; j++) {
+          const decorator = decorators[j];
           const props = decorator.getArguments()[0];
           let propsVarName;
 
@@ -62,18 +70,16 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`ClassUtils.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.R.ctorArgDecorator(${ctor.getName()}, ${i}, ${decorator.getName()}, ${propsVarName})`);
         }
       }
 
       const methods = ctor.getMethods();
       for (const method of methods) {
-        const ret = TypeIdResolver.typeToString(file.getFilePath(), method.getReturnType());
-        const args = method.getParameters().map(
-          (p) => TypeIdResolver.typeToString(file.getFilePath(), p.getType()),
-        );
+        const args = resolver.getMethodArgumentsInjectionTokens(method);
+        const ret = resolver.getMethodReturnInjectionToken(method);
 
-        statements.push(`ClassUtils.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, { typeId: "${ret.typeId}", isAsync: ${ret.isAsync} };`);
+        statements.push(`ClassUtils.R.method(${ctor.getName()}, "${method.getName()}", ${stringifyArgsType(args)}, ${stringifyArgType(ret)};`);
 
         const methodDecorators = method.getDecorators();
         for (const decorator of methodDecorators) {
@@ -93,7 +99,7 @@ async function run () {
             props.replaceWithText(propsVarName);
           }
 
-          statements.push(`ClassUtils.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
+          statements.push(`ClassUtils.R.methodDecorator(${ctor.getName()}, "${method.getName()}", ${decorator.getName()}, ${propsVarName})`);
         }
 
         const parameters = method.getParameters();
@@ -118,7 +124,7 @@ async function run () {
               props.replaceWithText(propsVarName);
             }
 
-            statements.push(`ClassUtils.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
+            statements.push(`ClassUtils.R.methodArgDecorator(${ctor.getName()}, "${method.getName()}", ${i}, ${decorator.getName()}, ${propsVarName})`);
           }
         }
       }
@@ -140,13 +146,17 @@ async function run () {
           props.replaceWithText(propsVarName);
         }
 
-        statements.push(`ClassUtils.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
+        statements.push(`ClassUtils.R.classDecorator(${ctor.getName()}, ${decorator.getName()}, ${propsVarName})`);
       }
 
-      const nextIndex = createIncrementalValue(ctor.getChildIndex());
-      statements.forEach((s) => {
-        file.insertStatements(nextIndex(), s);
-      });
+      try {
+        const nextIndex = createIncrementalValue(ctor.getChildIndex());
+        statements.forEach((s) => {
+          file.insertStatements(nextIndex(), s);
+        });
+      } catch(e) {
+        console.log(e);
+      }
     }
   }
 

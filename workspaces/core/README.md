@@ -24,6 +24,8 @@ Installation:
 npm install @lemondi/core @lemondi/classpath
 ```
 
+**Make sure to install the same version of core and classpath as it relies on Symbols, so both packages should reference the same library code**
+
 Package json build command:
 
 ```json
@@ -34,11 +36,13 @@ Package json build command:
     "build:lemon": "lemondi"
   },
   "dependencies": {
-    "@lemondi/core": "0.0.0-alpha.5",
-    "@lemondi/classpath": "0.0.0-alpha.5"
+    "@lemondi/core": "0.0.0-alpha.13",
+    "@lemondi/classpath": "0.0.0-alpha.13"
   }
 }
 ```
+
+`lemondi` command is similar to `tsc` (in fact, it is an extension of default typescript compiler). Use it instead of `tsc` to build your app. It will generate all the metadata required by `@lemondi/core` library for data injection.
 
 tsconfig.json
 
@@ -110,7 +114,7 @@ class ServiceB {
 }
 
 @Component()
-class Main {
+class App {
   constructor(
     private a: ServiceA,
     private b: ServiceB,
@@ -125,7 +129,7 @@ class Main {
 
 start({
   importFiles: [], // No extra files are needed for this example
-  modules: [Main],
+  modules: [App],
 });
 ```
 
@@ -139,7 +143,7 @@ import { Sequelize } from "sequelize";
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
   @Instantiate() // this will automatically inherit instance type
-  createSequelizeInstance() { // explicit return type is required, only classes can be used as factory types
+  createSequelizeInstance(): Sequelize { // explicit return type is required
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }
@@ -200,6 +204,80 @@ class App {
 }
 
 // Bootstrap application
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [App],  // The entry point; classes listed here will be instantiated automatically
+});
+```
+
+### Inject based on interface
+
+:construction: Bear in mind that interfaces injection doesn't work for external libraries not built with `@lemondi/classpath`.
+
+```typescript
+import {Component, OnInit, start} from "@lemondi/core";
+
+interface Animal {
+  makeNoise(): void;
+}
+
+@Component()
+class Dog implements Animal { // same works for extended classes
+  makeNoise() {
+    console.log("Bark");
+  }
+}
+
+@Component()
+class App {
+  constructor(
+    private animal: Animal, // app context will automatically find out that the only animal is Dog and inject it
+  ) { }
+
+  @OnInit()
+  onInit () {
+    this.animal.makeNoise(); // "Bark"
+  }
+}
+
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [App],  // The entry point; classes listed here will be instantiated automatically
+});
+```
+
+### Qualifiers
+
+```typescript
+import {Component, Factory, Instantiate, Qualifier, start} from "@lemondi/core";
+import {Sequelize} from "sequelize";
+
+@Factory()
+class DatabaseFactory {
+  @Instantiate({
+    default: true, // if no qualifier provided, this instance will be used
+  })
+  sequelizeA(): Sequelize {
+    return new Sequelize("sqlite::memory");
+  }
+
+  @Instantiate({
+    qualifier: "B",
+  })
+  sequelizeB(): Sequelize {
+    return new Sequelize("sqlite::memory");
+  }
+}
+
+@Component()
+class App {
+  constructor(
+    a: Sequelize, // sequelizeA() will be injected by default
+    @Qualifier("B")
+    b: Sequelize, // sequelizeB() will be injected because of qualifier
+  ) { }
+}
+
 start({
   importFiles: [], // No extra files are needed for this example
   modules: [App],  // The entry point; classes listed here will be instantiated automatically

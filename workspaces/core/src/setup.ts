@@ -1,62 +1,47 @@
-import {Component} from "./decorators/Component";
-import {addComponentProto, getDependencies, instantiate, TComponentProto} from "./container/di";
-import {Factory, Instantiate} from "./decorators/Factory";
-import {ClassPath, ClassUtils, TCtor} from "@lemondi/classpath";
+import { Component } from "./decorators/Component";
+import { AppContext } from "./context/AppContext";
+import { Factory, Instantiate } from "./decorators/Factory";
+import { ClassPath, ClassUtils, TCtor } from "@lemondi/classpath";
 
 function initComponent (c: TCtor) {
-  // todo: qualifiers
-  const factory = ((): TComponentProto => {
-    let value: any = undefined;
-    let isReady: boolean;
+  const [component] = ClassUtils.getDecorators(c, Component);
+  const props = component?.getProps();
 
-    const init = async () => {
-      value = await instantiate(c);
-    }
-
-    return {
-      init,
-      getValue: () => value,
-      getIsReady: () => isReady,
-    }
-  })();
-
-  addComponentProto([ClassUtils.getClassId(c)], factory);
+  AppContext.registerComponentFactory(
+    () => AppContext.instantiate(c),
+    ClassUtils.getClassId(c),
+    props?.qualifier,
+    !!props?.isDefault,
+  );
 }
 
 async function initFactory (c: TCtor) {
-  const factoryInstance = await instantiate(c);
+  const factoryInstance = await AppContext.instantiate(c);
 
   const methods = ClassUtils.getMethods(c);
   for (const method of methods) {
     const [decorator] = method.getDecorators(Instantiate);
     if (decorator) {
-      // TODO: qualifiers
-      const factory = (): TComponentProto => {
-        let value: any = undefined;
-        let isReady: boolean;
-
-        const init = async () => {
-          const deps = await getDependencies(
-            method.getArguments(),
-          );
-          value = factoryInstance[method.getName()](...deps);
-        }
-
-        return {
-          init,
-          getValue: () => value,
-          getIsReady: () => isReady,
-        }
-      };
-
-      addComponentProto([method.getReturnType().getTypeId()], factory());
+      if (method.getReturnType().getIsArray()) {
+        console.warn(`[${c.name}->${method.getName()}] A factory cannot return array`);
+      } else if (!method.getReturnType().getTypeId()) {
+        console.warn(`[${c.name}->${method.getName()}] A factory should have explicit return type (cannot be literal type, union or intersection)`);
+      } else {
+        const instantiateProps = decorator.getProps();
+        AppContext.registerComponentFactory(
+          () => AppContext.instantiateMethod(factoryInstance, method),
+          method.getReturnType().getTypeId(),
+          instantiateProps?.qualifier,
+          !!instantiateProps?.default,
+        );
+      }
     }
   }
 }
 
 export const setup = async () => {
-  const classes = ClassPath.getClasses();
-  for (const c of classes) {
+  const factories: TCtor[] = [];
+  ClassPath.scan((c: TCtor) => {
     const [component] = ClassUtils.getDecorators(c, Component);
 
     if (component) {
@@ -65,7 +50,11 @@ export const setup = async () => {
 
     const [factory] = ClassUtils.getDecorators(c, Factory);
     if (factory) {
-      await initFactory(c);
+      factories.push(c);
     }
+  });
+
+  for (const factory of factories) {
+    await initFactory(factory);
   }
 };
