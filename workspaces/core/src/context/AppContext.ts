@@ -1,4 +1,4 @@
-import {ClassUtils, TArgHandler, TMethodHandler} from "@lemondi/classpath";
+import {ClassPath, ClassUtils, TArgHandler, TMethodHandler} from "@lemondi/classpath";
 import {Qualifier} from "../decorators/Qualifier";
 
 export type TComponentFactoryInit = () => Promise<any>;
@@ -17,6 +17,31 @@ type TComponentFactoryEntry = {
 };
 
 const factories: TComponentFactoryEntry[] = [];
+
+const _cacheExtraTypes: Record<string, string[]> = {};
+const extractAllTypes = (typeId: string) => {
+  if (_cacheExtraTypes[typeId]) {
+    return _cacheExtraTypes[typeId];
+  }
+
+  const allTypes = [typeId];
+  const c = ClassPath.getClassById(typeId);
+  if (c) {
+    const interfaces = ClassUtils.getInterfacesTypeId(c);
+    const ext = ClassUtils.getExtendsTypeId(c);
+
+    if (ext) {
+      allTypes.push(ext);
+    }
+
+    if (interfaces.length > 0) {
+      allTypes.push(...interfaces);
+    }
+  }
+
+  _cacheExtraTypes[typeId] = allTypes;
+  return allTypes;
+};
 
 const createFactory = (factory: TComponentFactoryInit): TComponentFactory => {
   let value: any = undefined;
@@ -49,24 +74,27 @@ export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
     }
 
     if (type.getIsArray()) {
-      console.warn("Arrays are not currently supported");
+      console.warn("Arrays binding is not currently supported");
       return undefined;
     }
 
     const [qualifier] = type.getDecorators(Qualifier);
+    ClassPath.getClassById(type.getTypeId());
     return getComponent(type.getTypeId(), qualifier?.getProps());
   });
 
   return Promise.all(components);
 };
 
-const getComponent = async <T> (typeId: string | symbol, qualifier?: symbol | string): Promise<T> => {
+const getComponent = async <T> (typeId: string, qualifier?: symbol | string): Promise<T> => {
   if (!typeId || typeId === "unsupported" || typeId === "") {
     throw new Error(`Cannot inject "unsupported" type. Please check build logs to determine where unsupported id was generated`);
   }
 
-  const query: TComponentFactoryEntry[] = factories.filter((component) => {
-    if (component.type === typeId) {
+  const candidates: TComponentFactoryEntry[] = factories.filter((component) => {
+    const types = extractAllTypes(component.type);
+
+    if (types.includes(typeId)) {
       if (qualifier && qualifier !== component.qualifier) {
         return false;
       }
@@ -79,10 +107,10 @@ const getComponent = async <T> (typeId: string | symbol, qualifier?: symbol | st
 
   let proto: TComponentFactory = undefined;
 
-  if(query.length === 1) {
-    proto = query[0].proto;
-  } else if (query.length > 1) {
-    const d = query.filter((q) => q.isDefault);
+  if(candidates.length === 1) {
+    proto = candidates[0].proto;
+  } else if (candidates.length > 1) {
+    const d = candidates.filter((q) => q.isDefault);
     if (d.length === 1) {
       proto = d[0].proto;
     } else {
