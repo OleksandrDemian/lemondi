@@ -17,9 +17,10 @@ const SKIP_TOKEN = {
  *
  * @param {import("ts-morph").Type} type
  * @param {boolean} isAsync
+ * @param {boolean} isArray
  * @returns {{name: string, isAsync: boolean, actualType: import("ts-morph").Type}}
  */
-function getType (type, isAsync = false) {
+function getType (type, isAsync = false, isArray = false) {
   if (isPrimitiveType(type)) {
     return {
       name: type.getText(),
@@ -163,6 +164,7 @@ module.exports.TypeIdResolver = (() => {
      * @returns {TInjectionToken}
      */
     function getTypeInjectionToken(type) {
+      const tname = type.getText();
       const { isAsync, name, actualType } = getType(type);
       const ext = getExternalImport(imports[name]);
       let token;
@@ -217,7 +219,6 @@ module.exports.TypeIdResolver = (() => {
      * @returns {TInjectionToken[]}
      */
     function getMethodArgumentsInjectionTokens (method) {
-      const name = method.getName();
       return method.getParameters().map(
         (p) => {
           if (!p.getStructure().type) {

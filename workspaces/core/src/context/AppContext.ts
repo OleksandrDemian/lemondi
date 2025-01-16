@@ -44,7 +44,6 @@ const registerComponentFactory = (factory: TComponentFactoryInit, type: string, 
 
 export const getDependencies = async (args: TArgHandler[]): Promise<any[]> => {
   const components = args.map((type) => {
-    // You can extend this logic to resolve the dependency
     if (type.getTypeId() === "") {
       return undefined;
     }
