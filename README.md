@@ -40,6 +40,8 @@ Package json build command:
 }
 ```
 
+`lemondi` command is similar to `tsc` (in fact, it is an extension of default typescript compiler). Use it instead of `tsc` to build your app. It will generate all the metadata required by `@lemondi/core` library for data injection.
+
 tsconfig.json
 
 ```json
@@ -78,6 +80,8 @@ start({
 
 ### Inject class
 
+This is possible with most Typescript DI framework: inject a class component 
+
 ```typescript
 import {Component, OnInit, start} from "@lemondi/core";
 
@@ -110,7 +114,7 @@ class ServiceB {
 }
 
 @Component()
-class Main {
+class App {
   constructor(
     private a: ServiceA,
     private b: ServiceB,
@@ -125,11 +129,15 @@ class Main {
 
 start({
   importFiles: [], // No extra files are needed for this example
-  modules: [Main],
+  modules: [App],
 });
 ```
 
 ### Use Factory to instantiate external library
+
+In this example you can already see a small quality-of-life improvement. In facto you don't have to create custom
+Injection Token to identify Sequelize instance (which comes from external library), instead `@lemondi/core` will figure
+out on it's own the type based on function return (keep in mind you have to explicitly declare return type).
 
 ```typescript
 import { Component, Factory, Instantiate, OnInit, start } from "@lemondi/core";
@@ -139,7 +147,7 @@ import { Sequelize } from "sequelize";
 class DatabaseFactory {
   // Factories allow you to integrate external libraries by manually instantiating components
   @Instantiate() // this will automatically inherit instance type
-  createSequelizeInstance() { // explicit return type is required, only classes can be used as factory types
+  createSequelizeInstance(): Sequelize { // explicit return type is required
     // This method will automatically run to create a Sequelize instance
     return new Sequelize("sqlite::memory");
   }
@@ -200,6 +208,91 @@ class App {
 }
 
 // Bootstrap application
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [App],  // The entry point; classes listed here will be instantiated automatically
+});
+```
+
+### Inject based on interface
+
+:construction: Bear in mind that interfaces injection doesn't work for external libraries not built with `@lemondi/classpath`.
+
+This example i not possible in other Typescript DI frameworks. In fact they will require you to create a custom token
+in order to inject using interface.
+
+`@lemondi` instead figures out that the only object implementing Animal is Dog and will inject it. You may wonder what
+happens when you have multiple components implementing the same interface? Go to the next section (Qualifiers) to find
+out! 
+
+```typescript
+import {Component, OnInit, start} from "@lemondi/core";
+
+interface Animal {
+  makeNoise(): void;
+}
+
+@Component()
+class Dog implements Animal { // same works for extended classes
+  makeNoise() {
+    console.log("Bark");
+  }
+}
+
+@Component()
+class App {
+  constructor(
+    private animal: Animal, // app context will automatically find out that the only animal is Dog and inject it
+  ) { }
+
+  @OnInit()
+  onInit () {
+    this.animal.makeNoise(); // "Bark"
+  }
+}
+
+start({
+  importFiles: [], // No extra files are needed for this example
+  modules: [App],  // The entry point; classes listed here will be instantiated automatically
+});
+```
+
+### Qualifiers
+
+In this example we have 2 sequelize database instances. In order to differentiate them we can use `@Qualifier` decorator
+to give names to the instances. It is also possible to mark instance as default, so it will be used automatically if no
+qualifiers provided.
+
+```typescript
+import {Component, Factory, Instantiate, Qualifier, start} from "@lemondi/core";
+import {Sequelize} from "sequelize";
+
+@Factory()
+class DatabaseFactory {
+  @Instantiate({
+    default: true, // if no qualifier provided, this instance will be used
+  })
+  sequelizeA(): Sequelize {
+    return new Sequelize("sqlite::memory");
+  }
+
+  @Instantiate({
+    qualifier: "B",
+  })
+  sequelizeB(): Sequelize {
+    return new Sequelize("sqlite::memory");
+  }
+}
+
+@Component()
+class App {
+  constructor(
+    a: Sequelize, // sequelizeA() will be injected by default
+    @Qualifier("B")
+    b: Sequelize, // sequelizeB() will be injected because of qualifier
+  ) { }
+}
+
 start({
   importFiles: [], // No extra files are needed for this example
   modules: [App],  // The entry point; classes listed here will be instantiated automatically

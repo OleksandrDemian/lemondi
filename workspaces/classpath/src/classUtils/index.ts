@@ -143,7 +143,12 @@ function getDecorators <T>(ctor: TCtor, decorator: TDecoratorCtor<T>): TDecorato
 }
 
 function getMethods (ctor: TCtor): TMethodHandler[] {
-  return Object.keys(ctor.prototype[ClassPathSymbols.METHODS])
+  const methods = ctor.prototype[ClassPathSymbols.METHODS];
+  if (!methods) {
+    return [];
+  }
+
+  return Object.keys(methods)
     .map((m) =>
       getMethodHandler(ctor.prototype[ClassPathSymbols.METHODS][m]));
 }
